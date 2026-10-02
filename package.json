@@ -1,0 +1,45 @@
+{
+  "name": "domino-101",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "dev": "pnpm build:packages && pnpm --parallel --filter \"./apps/*\" dev",
+    "build:packages": "pnpm --filter \"./packages/*\" -r build",
+    "build": "pnpm build:packages && pnpm --filter \"./apps/*\" -r build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "pnpm --filter @domino/server db:migrate",
+    "typecheck": "pnpm build:packages && pnpm -r typecheck && tsc -p tsconfig.tools.json && tsc -p e2e/tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm build:packages && vitest run",
+    "test:watch": "pnpm build:packages && vitest",
+    "start": "pnpm --filter @domino/server start",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "simulate": "pnpm build:packages && node scripts/simulate.ts",
+    "test:socket": "pnpm build:packages && vitest run apps/server/src/__tests__/*.socket.test.ts",
+    "test:postgres": "pnpm build:packages && DOMINO_REQUIRE_POSTGRES=1 vitest run apps/server/src/__tests__/persistence.postgres.integration.test.ts",
+    "test:e2e": "pnpm build:packages && pnpm --filter @domino/server build && playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
+    "drizzle-kit": "0.31.11",
+    "eslint": "10.11.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.4.26",
+    "globals": "16.5.0",
+    "jsdom": "28.1.0",
+    "prettier": "3.9.9",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.1",
+    "vitest": "4.1.11"
+  }
+}
