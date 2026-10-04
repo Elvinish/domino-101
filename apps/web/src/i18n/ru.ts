@@ -1,5 +1,10 @@
 import type { Messages } from './en';
 export const ru: Messages = {
+  'bots.label': 'Бот',
+  'bots.ready': 'Готов',
+  'bots.add': 'Добавить бота',
+  'bots.remove': 'Убрать бота',
+  'bots.fill': 'Заполнить свободные места ботами',
   'voice.title': 'Голосовой чат',
   'voice.enable': 'Включить микрофон',
   'voice.micOff': 'Микрофон выключен',

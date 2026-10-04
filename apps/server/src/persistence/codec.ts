@@ -10,6 +10,7 @@ import {
   roomIdSchema,
   socialResultSchema,
   tileSchema,
+  playerKindSchema,
 } from '@domino/protocol';
 import type { CommandResult } from '@domino/protocol';
 import { z } from 'zod';
@@ -123,6 +124,7 @@ const commandSchema = z.strictObject({
   result: commandResultSchema,
 });
 const playerSchema = z.strictObject({
+  kind: playerKindSchema.default('human'),
   playerId: playerIdSchema,
   displayName: createRoomSchema.shape.displayName,
   seat,
@@ -159,6 +161,7 @@ export function serializeRoom(room: Room): PersistedRoom {
       player
         ? [
             {
+              kind: player.kind,
               playerId: player.playerId,
               displayName: player.displayName,
               seat: player.seat,
@@ -205,10 +208,14 @@ export function parsePersistedRoom(value: unknown): PersistedRoom {
       parsed.players.length ||
     new Set(parsed.players.map((player) => player.playerId)).size !==
       parsed.players.length ||
-    !parsed.players.some((player) => player.playerId === parsed.hostId)
+    !parsed.players.some(
+      (player) => player.playerId === parsed.hostId && player.kind === 'human',
+    )
   )
     throw new Error('Invalid persisted memberships');
   for (const player of parsed.players) {
+    if (player.kind === 'bot' && player.tokenHash !== null)
+      throw new Error('Bot credentials are forbidden');
     if (
       new Set(player.commands.map((entry) => entry.commandId)).size !==
       player.commands.length
@@ -296,6 +303,7 @@ export function playerFromPersisted(
     });
   return {
     playerId: value.playerId,
+    kind: value.kind,
     displayName: value.displayName,
     seat: value.seat,
     socketId: null,

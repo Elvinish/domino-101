@@ -17,6 +17,7 @@ import {
   chatCommandSchema,
   reactionCommandSchema,
   socialResultSchema,
+  roomBotsSchema,
 } from '@domino/protocol';
 import type {
   ClientToServerEvents,
@@ -30,6 +31,7 @@ import type {
   ChatMessage,
   ReactionReceived,
   SocialResult,
+  BotAction,
 } from '@domino/protocol';
 import { errorMessages } from './errors';
 import type { MessageKey } from '../i18n';
@@ -460,6 +462,26 @@ export class MultiplayerClient {
           socket.emit(CLIENT_EVENTS.start, { roomId }, ack),
         )
       : Promise.resolve(false);
+  };
+  manageBots = (action: BotAction) => {
+    const { room, joined } = this.state;
+    if (
+      !room ||
+      !joined ||
+      room.hostId !== joined.playerId ||
+      room.lifecycle !== 'lobby' ||
+      this.state.replaced
+    )
+      return Promise.resolve(false);
+    const payload = roomBotsSchema.safeParse({
+      roomId: room.roomId,
+      expectedRevision: room.revision,
+      action,
+    });
+    if (!payload.success) return Promise.resolve(false);
+    return this.request((socket, ack) =>
+      socket.emit(CLIENT_EVENTS.bots, payload.data, ack),
+    );
   };
   act = (command: GameAction) => {
     const { room, game, joined } = this.state;

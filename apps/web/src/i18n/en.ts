@@ -1,4 +1,9 @@
 export const en = {
+  'bots.label': 'Bot',
+  'bots.ready': 'Ready',
+  'bots.add': 'Add bot',
+  'bots.remove': 'Remove bot',
+  'bots.fill': 'Fill empty seats with bots',
   'voice.title': 'Voice chat',
   'voice.enable': 'Enable microphone',
   'voice.micOff': 'Microphone off',

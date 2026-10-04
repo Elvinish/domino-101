@@ -108,6 +108,25 @@ privacy checks.
 socket replacement. [Phase 6 report](docs/PHASE_6.md) documents room chat, reactions,
 limits, isolation and browser behavior. [Phase 7 report](docs/PHASE_7.md) covers localization, sound, accessibility and responsive polish. [Phase 8 report](docs/PHASE_8.md) documents PostgreSQL transactions, restart recovery, privacy, exact verification results and production limitations. [Phase 9 report](docs/PHASE_9.md) covers room voice, its security and lifecycle, and final project verification.
 
+## Playing with server bots
+
+In a room lobby, the host can **Add bot** to an empty seat, **Remove bot**, or
+**Fill empty seats with bots**. One human plus three bots can start and play a normal
+match. Bots use the existing deterministic strategy, act after 650 ms and persist
+with PostgreSQL rooms. The human host still advances rounds. Controls and bot labels
+are available in English, Russian and Azerbaijani.
+
+The additive `0001_dev_bots` migration stores membership kind; deploy the matching
+web/server builds together. See [Host-managed bots](docs/DEV_BOTS.md) for scheduling,
+privacy, persistence, limitations and final verification. Run the real browser bot
+scenario with `pnpm test:e2e e2e/bots.spec.ts`.
+
+Bot-feature verification passed: **532 Vitest tests / 44 files**, including **17
+PostgreSQL tests**, **55 Socket.IO tests**, production build, clean/upgrade/repeated
+migrations, and **15 Playwright scenarios** across desktop, tablet and phone. Each
+bot browser scenario completed a real round. Formatting, lint and full typecheck
+also passed. The Phase 9 results below are the historical phase checkpoint.
+
 ## QA simulations
 
 ```sh

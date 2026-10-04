@@ -48,6 +48,7 @@ export const roomPlayers = pgTable(
       .notNull()
       .references(() => roomRecords.roomId, { onDelete: 'cascade' }),
     playerId: uuid('player_id').notNull(),
+    kind: varchar('kind', { length: 5 }).notNull().default('human'),
     displayName: varchar('display_name', { length: 32 }).notNull(),
     seat: integer('seat').notNull(),
     tokenHash: varchar('token_hash', { length: 64 }),
@@ -56,6 +57,11 @@ export const roomPlayers = pgTable(
     primaryKey({ columns: [table.roomId, table.playerId] }),
     uniqueIndex('room_player_seat_idx').on(table.roomId, table.seat),
     check('player_seat_check', sql`${table.seat} between 0 and 3`),
+    check('player_kind_check', sql`${table.kind} in ('human', 'bot')`),
+    check(
+      'bot_token_check',
+      sql`${table.kind} <> 'bot' or ${table.tokenHash} is null`,
+    ),
     check(
       'player_token_hash_check',
       sql`${table.tokenHash} is null or ${table.tokenHash} ~ '^[a-f0-9]{64}$'`,

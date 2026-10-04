@@ -47,6 +47,42 @@ async function roomFixture(): Promise<Room> {
   return room;
 }
 describe('strict versioned persistence boundaries', () => {
+  it('defaults legacy memberships to human and refuses bot credentials or a bot host', async () => {
+    const value = serializeRoom(await roomFixture());
+    const legacy = {
+      ...value,
+      players: value.players.map((player) => {
+        return Object.fromEntries(
+          Object.entries(player).filter(([key]) => key !== 'kind'),
+        );
+      }),
+    };
+    expect(
+      parsePersistedRoom(legacy).players.every((p) => p.kind === 'human'),
+    ).toBe(true);
+    const bots = {
+      ...value,
+      players: value.players.map((p, i) =>
+        i ? { ...p, kind: 'bot', tokenHash: null } : p,
+      ),
+    };
+    expect(
+      parsePersistedRoom(bots)
+        .players.slice(1)
+        .every((p) => p.kind === 'bot'),
+    ).toBe(true);
+    expect(() =>
+      parsePersistedRoom({ ...bots, hostId: bots.players[1]!.playerId }),
+    ).toThrow();
+    expect(() =>
+      parsePersistedRoom({
+        ...bots,
+        players: bots.players.map((p, i) =>
+          i === 1 ? { ...p, tokenHash: 'a'.repeat(64) } : p,
+        ),
+      }),
+    ).toThrow();
+  });
   it('serializes explicit fields, hashes only, and omits queues/socket identities', async () => {
     const room = await roomFixture();
     const value = serializeRoom(room);

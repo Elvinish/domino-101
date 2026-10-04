@@ -1336,3 +1336,13 @@ button,
     grid-template-columns: 1fr;
   }
 }
+
+.lobby-bot-actions {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+.bot-seat-control {
+  margin-top: 0.5rem;
+  white-space: normal;
+}

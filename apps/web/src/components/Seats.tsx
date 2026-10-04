@@ -1,14 +1,23 @@
 import { useI18n } from '../i18n';
-import type { GameSnapshot, RoomJoined, RoomSnapshot } from '@domino/protocol';
+import type {
+  BotAction,
+  GameSnapshot,
+  RoomJoined,
+  RoomSnapshot,
+} from '@domino/protocol';
 
 export function Seats({
   room,
   own,
   game,
+  botControls,
 }: {
   room: RoomSnapshot;
   own: RoomJoined;
   game?: GameSnapshot | null;
+  botControls?:
+    | { disabled: boolean; onAction: (action: BotAction) => Promise<boolean> }
+    | undefined;
 }) {
   const { t } = useI18n();
   const positions = ['bottom', 'left', 'top', 'right'];
@@ -29,7 +38,7 @@ export function Seats({
         return (
           <section
             key={seat}
-            className={`seat seat-${positions[relative]} ${active ? 'active' : ''} ${relative === 0 ? 'own-seat' : ''} ${player && !player.connected ? 'offline-seat' : ''}`}
+            className={`seat seat-${positions[relative]} ${active ? 'active' : ''} ${relative === 0 ? 'own-seat' : ''} ${player && player.kind !== 'bot' && !player.connected ? 'offline-seat' : ''}`}
             aria-label={t('seat.label', { number: seat + 1, relation })}
             aria-current={active ? 'true' : undefined}
           >
@@ -37,7 +46,10 @@ export function Seats({
               {player?.displayName.slice(0, 1).toLocaleUpperCase() ?? '+'}
             </span>
             <div className="seat-copy">
-              <strong>{player?.displayName ?? t('seat.open')}</strong>
+              <strong>
+                {player?.displayName ?? t('seat.open')}
+                {player?.kind === 'bot' ? ` · ${t('bots.label')}` : ''}
+              </strong>
               <span>
                 {relation} ·{' '}
                 {t('seat.team', {
@@ -47,15 +59,34 @@ export function Seats({
               </span>
               <span>
                 {player
-                  ? player.connected
+                  ? player.connected || player.kind === 'bot'
                     ? active
                       ? relative === 0
                         ? t('seat.yourTurn')
                         : t('seat.playing')
-                      : t('connection.connected')
+                      : player.kind === 'bot'
+                        ? t('bots.ready')
+                        : t('connection.connected')
                     : t('connection.disconnected')
                   : t('seat.waiting')}
               </span>
+              {botControls &&
+                room.lifecycle === 'lobby' &&
+                room.hostId === own.playerId &&
+                (!player || player.kind === 'bot') && (
+                  <button
+                    className="quiet bot-seat-control"
+                    disabled={botControls.disabled}
+                    onClick={() =>
+                      void botControls.onAction({
+                        type: player ? 'remove' : 'add',
+                        seat: seat as 0 | 1 | 2 | 3,
+                      })
+                    }
+                  >
+                    {t(player ? 'bots.remove' : 'bots.add')}
+                  </button>
+                )}
               {game && relative !== 0 && (
                 <span className="hand-count">
                   {t('seat.tiles', { count: game.public.handCounts[seat]! })}

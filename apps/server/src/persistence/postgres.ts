@@ -64,6 +64,7 @@ export class PostgresPersistenceStore implements PersistenceStore {
           ...row,
           players: players.map((player) => ({
             playerId: player.playerId,
+            kind: player.kind,
             displayName: player.displayName,
             seat: player.seat,
             tokenHash: player.tokenHash,
@@ -115,6 +116,7 @@ export class PostgresPersistenceStore implements PersistenceStore {
         room.players.map((player) => ({
           roomId: room.roomId,
           playerId: player.playerId,
+          kind: player.kind,
           displayName: player.displayName,
           seat: player.seat,
           tokenHash: player.tokenHash,

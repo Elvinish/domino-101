@@ -23,7 +23,9 @@ export function Room({
         <p role="status">{t('room.preparing')}</p>
       </main>
     );
-  const ready = room.seats.every((player) => player?.connected);
+  const ready = room.seats.every(
+    (player) => player && (player.kind === 'bot' || player.connected),
+  );
   const host = room.hostId === joined.playerId;
   const disabled = state.pending || state.status !== 'connected';
   async function copy(value: string) {
@@ -70,7 +72,15 @@ export function Room({
         <>
           <p className="lobby-intro">{t('room.invite')}</p>
           <div className="table-shell lobby-table">
-            <Seats room={room} own={joined} />
+            <Seats
+              room={room}
+              own={joined}
+              botControls={
+                host && !state.replaced
+                  ? { disabled, onAction: client.manageBots }
+                  : undefined
+              }
+            />
             <section className="lobby-center">
               <p className="eyebrow">{t('room.fourSeats')}</p>
               <strong>
@@ -91,6 +101,19 @@ export function Room({
               )}
             </section>
           </div>
+          {host &&
+            !state.replaced &&
+            room.seats.some((player) => player === null) && (
+              <div className="lobby-bot-actions">
+                <button
+                  className="quiet"
+                  disabled={disabled}
+                  onClick={() => void client.manageBots({ type: 'fill' })}
+                >
+                  {t('bots.fill')}
+                </button>
+              </div>
+            )}
           <p className="fine-print">{t('room.saved')}</p>
         </>
       ) : game ? (

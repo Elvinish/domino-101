@@ -18,6 +18,7 @@ export function roomFixture(): RoomSnapshot {
     isPaused: false,
     seats: [0, 1, 2, 3].map((seat) => ({
       playerId: ids[seat]!,
+      kind: 'human',
       displayName: ['Ayla', 'Murad', 'Leyla', 'Rauf'][seat]!,
       seat,
       team: seat % 2 === 0 ? 'A' : 'B',

@@ -2,6 +2,7 @@ import type {
   ChatMessage,
   CommandResult,
   SocialResult,
+  PlayerKind,
 } from '@domino/protocol';
 import type { MatchState, Seat } from '@domino/game-engine';
 
@@ -14,6 +15,7 @@ export interface PersistedCommand {
   readonly result: CommandResult;
 }
 export interface PersistedPlayer {
+  readonly kind: PlayerKind;
   readonly playerId: string;
   readonly displayName: string;
   readonly seat: Seat;

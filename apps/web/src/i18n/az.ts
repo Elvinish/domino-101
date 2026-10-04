@@ -1,5 +1,10 @@
 import type { Messages } from './en';
 export const az: Messages = {
+  'bots.label': 'Bot',
+  'bots.ready': 'Hazırdır',
+  'bots.add': 'Bot əlavə et',
+  'bots.remove': 'Botu sil',
+  'bots.fill': 'Boş yerləri botlarla doldur',
   'voice.title': 'Səsli söhbət',
   'voice.enable': 'Mikrofonu aktiv et',
   'voice.micOff': 'Mikrofon sönülüdür',

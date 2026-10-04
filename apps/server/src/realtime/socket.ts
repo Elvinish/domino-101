@@ -21,6 +21,7 @@ import {
   serverErrorSchema,
   startRoomSchema,
   voiceServerSchemas,
+  roomBotsSchema,
 } from '@domino/protocol';
 import type {
   ClientToServerEvents,
@@ -41,7 +42,7 @@ import { attachVoice } from '../voice/socket.js';
 
 export type RealtimeOptions = Pick<
   RoomServiceOptions,
-  'makeDeck' | 'maxRooms' | 'idempotencyLimit' | 'offlineRoomTtlMs'
+  'makeDeck' | 'maxRooms' | 'idempotencyLimit' | 'offlineRoomTtlMs' | 'botClock'
 > & { persistence?: PersistenceStore };
 export function attachRealtime(
   app: FastifyInstance,
@@ -306,6 +307,13 @@ export function attachRealtime(
       safe(
         handle(CLIENT_EVENTS.start, startRoomSchema, payload, ack, (value) =>
           rooms.start(connection, value),
+        ),
+      ),
+    );
+    socket.on(CLIENT_EVENTS.bots, (payload, ack) =>
+      safe(
+        handle(CLIENT_EVENTS.bots, roomBotsSchema, payload, ack, (value) =>
+          rooms.manageBots(connection, value),
         ),
       ),
     );

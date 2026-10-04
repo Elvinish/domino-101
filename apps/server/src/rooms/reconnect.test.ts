@@ -38,13 +38,15 @@ describe('serialized reconnect lifecycle', () => {
     expect(JSON.stringify(f.room()).includes(session.reconnectToken)).toBe(
       false,
     );
-    await f.service.join(
-      connection(),
-      { roomId: session.roomId, displayName: 'QA bot' },
-      'bot',
-    );
+    await f.service.manageBots(f.owner, {
+      roomId: session.roomId,
+      expectedRevision: f.room().revision,
+      action: { type: 'add', seat: 1 },
+    });
     expect(f.sessions).toHaveLength(1);
     expect(f.room().seats[1]!.tokenHash).toBeNull();
+    expect(f.room().seats[1]!.socketId).toBeNull();
+    expect(f.room().seats[1]!.kind).toBe('bot');
   });
   it('serializes simultaneous replacements and a queued old disconnect', async () => {
     const f = setup();

@@ -21,9 +21,12 @@ import type {
   JoinRoom,
   RoomJoined,
   StartRoom,
+  RoomBots,
 } from '@domino/protocol';
 import { errorCode, failure, requireRoom, RoomError } from './errors.js';
 import { SerialQueue } from './queue.js';
+import { BotScheduler, botDecision } from '../bots/scheduler.js';
+import type { BotClock, BotTurn } from '../bots/scheduler.js';
 import { secureDeck } from './shuffle.js';
 import { roomReady } from './types.js';
 import type { Connection, Player, Room, RoomMember } from './types.js';
@@ -49,6 +52,7 @@ export interface RoomServiceOptions {
   readonly idempotencyLimit?: number;
   readonly maxRooms?: number;
   readonly persistence?: PersistenceStore;
+  readonly botClock?: BotClock;
 }
 
 export class RoomService {
@@ -62,11 +66,16 @@ export class RoomService {
   private readonly blocked = new Set<string>();
   private readonly expiry = new Map<string, ReturnType<typeof setTimeout>>();
   private closed = false;
+  private readonly bots: BotScheduler;
   private readonly offlineRoomTtlMs: number;
   private readonly makeDeck: () => readonly Tile[];
   private readonly historyLimit: number;
   private readonly maxRooms: number;
   constructor(private readonly options: RoomServiceOptions) {
+    this.bots = new BotScheduler(
+      (turn) => this.runBotTurn(turn),
+      options.botClock,
+    );
     this.makeDeck = options.makeDeck ?? secureDeck;
     this.historyLimit = options.idempotencyLimit ?? COMMAND_HISTORY_LIMIT;
     this.maxRooms = options.maxRooms ?? 1000;
@@ -156,6 +165,7 @@ export class RoomService {
   }
   public blockRoom(roomId: string): void {
     this.blocked.add(roomId);
+    this.bots.cancel(roomId);
     this.clearExpiry(roomId);
     this.options.onPersistenceFailure?.(roomId);
   }
@@ -200,6 +210,7 @@ export class RoomService {
     }
     this.clearExpiry(room.id);
     if (remove) {
+      this.bots.cancel(room.id);
       this.rooms.delete(room.id);
       this.options.onRoomRemoved?.(room.id);
       return;
@@ -212,6 +223,7 @@ export class RoomService {
           playerId: player.playerId,
         });
     this.scheduleExpiry(room);
+    if (!this.closed && !this.blocked.has(room.id)) this.bots.sync(room);
   }
   private success(room: Room, commandId?: string): CommandResult {
     return {
@@ -226,18 +238,15 @@ export class RoomService {
     connection: Connection,
     displayName: string,
     seat: Seat,
-    kind: 'human' | 'bot',
   ) {
-    const token =
-      kind === 'human' ? randomBytes(32).toString('base64url') : undefined;
+    const token = randomBytes(32).toString('base64url');
     const player: Player = {
+      kind: 'human',
       playerId: randomUUID(),
       displayName,
       seat,
       socketId: connection.id,
-      tokenHash: token
-        ? createHash('sha256').update(token).digest('hex')
-        : null,
+      tokenHash: createHash('sha256').update(token).digest('hex'),
       commands: new Map(),
     };
     room.seats[seat] = player;
@@ -286,21 +295,11 @@ export class RoomService {
     };
   }
   /** Synchronous convenience for existing in-memory tests. Transport uses createAsync. */
-  create(
-    connection: Connection,
-    payload: CreateRoom,
-    kind: 'human' | 'bot' = 'human',
-  ): CommandResult {
+  create(connection: Connection, payload: CreateRoom): CommandResult {
     requireRoom(!this.options.persistence, 'SERVER_BUSY');
     this.available(connection);
     const room = this.newRoom();
-    const added = this.addPlayer(
-      room,
-      connection,
-      payload.displayName,
-      0,
-      kind,
-    );
+    const added = this.addPlayer(room, connection, payload.displayName, 0);
     room.hostId = added.player.playerId;
     this.rooms.set(room.id, room);
     this.memberships.set(connection.id, {
@@ -313,10 +312,8 @@ export class RoomService {
   async createAsync(
     connection: Connection,
     payload: CreateRoom,
-    kind: 'human' | 'bot' = 'human',
   ): Promise<CommandResult> {
-    if (!this.options.persistence)
-      return this.create(connection, payload, kind);
+    if (!this.options.persistence) return this.create(connection, payload);
     this.available(connection);
     const room = this.newRoom();
     this.rooms.set(room.id, room);
@@ -325,13 +322,7 @@ export class RoomService {
       try {
         this.live(connection);
         const next = this.draft(room);
-        const added = this.addPlayer(
-          next,
-          connection,
-          payload.displayName,
-          0,
-          kind,
-        );
+        const added = this.addPlayer(next, connection, payload.displayName, 0);
         next.hostId = added.player.playerId;
         await this.commit(room, next);
         this.joined(room, connection, added.player, added.token);
@@ -344,11 +335,7 @@ export class RoomService {
       }
     });
   }
-  join(
-    connection: Connection,
-    payload: JoinRoom,
-    kind: 'human' | 'bot' = 'human',
-  ): Promise<CommandResult> {
+  join(connection: Connection, payload: JoinRoom): Promise<CommandResult> {
     const room = this.getRoom(payload.roomId);
     return room.queue.run(async () => {
       this.usable(room);
@@ -364,7 +351,6 @@ export class RoomService {
           connection,
           payload.displayName,
           seat as Seat,
-          kind,
         );
         this.bump(next);
         await this.commit(room, next);
@@ -373,6 +359,48 @@ export class RoomService {
       } finally {
         this.claims.delete(connection.id);
       }
+    });
+  }
+  manageBots(
+    connection: Connection,
+    payload: RoomBots,
+  ): Promise<CommandResult> {
+    const room = this.getRoom(payload.roomId);
+    return room.queue.run(async () => {
+      const host = this.member(connection, room);
+      requireRoom(host.playerId === room.hostId, 'NOT_HOST');
+      requireRoom(room.lifecycle === 'lobby', 'ROOM_ALREADY_STARTED');
+      requireRoom(room.revision === payload.expectedRevision, 'STALE_REVISION');
+      const next = this.draft(room);
+      const action = payload.action;
+      if (action.type === 'remove') {
+        requireRoom(next.seats[action.seat]?.kind === 'bot', 'INVALID_PAYLOAD');
+        next.seats[action.seat] = null;
+      } else {
+        const seats =
+          action.type === 'add'
+            ? [action.seat]
+            : next.seats.flatMap((entry, seat) =>
+                entry === null ? [seat as Seat] : [],
+              );
+        requireRoom(seats.length > 0, 'ROOM_FULL');
+        for (const seat of seats) {
+          requireRoom(next.seats[seat] === null, 'INVALID_PAYLOAD');
+          next.seats[seat] = {
+            kind: 'bot',
+            playerId: randomUUID(),
+            displayName: `Domino ${seat + 1}`,
+            seat,
+            socketId: null,
+            tokenHash: null,
+            commands: new Map(),
+          };
+        }
+      }
+      this.bump(next);
+      await this.commit(room, next);
+      this.options.onUpdate(room);
+      return this.success(room);
     });
   }
   start(connection: Connection, payload: StartRoom): Promise<CommandResult> {
@@ -393,67 +421,90 @@ export class RoomService {
   }
   game(connection: Connection, payload: GameCommand): Promise<CommandResult> {
     const room = this.getRoom(payload.roomId);
-    return room.queue.run(async () => {
-      const player = this.member(connection, room);
-      const digest = fingerprint(payload);
-      const previous = player.commands.get(payload.commandId);
-      if (previous)
-        return previous.fingerprint === digest
-          ? previous.result
-          : failure('DUPLICATE_COMMAND_CONFLICT', payload.commandId);
-      const next = this.draft(room);
-      let result: CommandResult;
-      try {
-        requireRoom(
-          payload.expectedRevision === room.revision,
-          'STALE_REVISION',
-        );
-        requireRoom(
-          room.lifecycle === 'playing' && room.match,
-          'INVALID_PHASE',
-        );
-        requireRoom(roomReady(room), 'ROOM_NOT_READY');
-        let state: MatchState;
-        const command = payload.command;
-        switch (command.type) {
-          case 'play':
-            state = playTile(
-              room.match.state,
-              player.seat,
-              command.tile,
-              command.end,
-            );
-            break;
-          case 'pass':
-            state = passTurn(room.match.state, player.seat);
-            break;
-          case 'select-starter':
-            state = selectStarter(
-              room.match.state,
-              player.seat,
-              command.selected,
-            );
-            break;
-          case 'next-round':
-            requireRoom(player.playerId === room.hostId, 'NOT_HOST');
-            state = startNextRound(room.match.state, this.makeDeck());
-            break;
-        }
-        this.bump(next);
-        next.match = { id: room.match.id, state };
-        if (state.phase === 'match-finished') next.lifecycle = 'completed';
-        result = this.success(next, payload.commandId);
-      } catch (error) {
-        result = failure(errorCode(error), payload.commandId);
+    return room.queue.run(() =>
+      this.applyGame(room, this.member(connection, room), payload),
+    );
+  }
+  /** Both human requests and scheduled bots enter here while holding the same room queue. */
+  private async applyGame(
+    room: Room,
+    player: Player,
+    payload: GameCommand,
+  ): Promise<CommandResult> {
+    const digest = fingerprint(payload);
+    const previous = player.commands.get(payload.commandId);
+    if (previous)
+      return previous.fingerprint === digest
+        ? previous.result
+        : failure('DUPLICATE_COMMAND_CONFLICT', payload.commandId);
+    const next = this.draft(room);
+    let result: CommandResult;
+    try {
+      requireRoom(payload.expectedRevision === room.revision, 'STALE_REVISION');
+      requireRoom(room.lifecycle === 'playing' && room.match, 'INVALID_PHASE');
+      requireRoom(roomReady(room), 'ROOM_NOT_READY');
+      let state: MatchState;
+      const command = payload.command;
+      switch (command.type) {
+        case 'play':
+          state = playTile(
+            room.match.state,
+            player.seat,
+            command.tile,
+            command.end,
+          );
+          break;
+        case 'pass':
+          state = passTurn(room.match.state, player.seat);
+          break;
+        case 'select-starter':
+          state = selectStarter(
+            room.match.state,
+            player.seat,
+            command.selected,
+          );
+          break;
+        case 'next-round':
+          requireRoom(player.playerId === room.hostId, 'NOT_HOST');
+          state = startNextRound(room.match.state, this.makeDeck());
+          break;
       }
-      const commands = next.seats[player.seat]!.commands;
-      commands.set(payload.commandId, { fingerprint: digest, result });
-      if (commands.size > this.historyLimit)
-        commands.delete(commands.keys().next().value!);
-      await this.commit(room, next);
-      if (result.ok) this.options.onUpdate(room);
-      return result;
-    });
+      this.bump(next);
+      next.match = { id: room.match.id, state };
+      if (state.phase === 'match-finished') next.lifecycle = 'completed';
+      result = this.success(next, payload.commandId);
+    } catch (error) {
+      result = failure(errorCode(error), payload.commandId);
+    }
+    const commands = next.seats[player.seat]!.commands;
+    commands.set(payload.commandId, { fingerprint: digest, result });
+    if (commands.size > this.historyLimit)
+      commands.delete(commands.keys().next().value!);
+    await this.commit(room, next);
+    if (result.ok) this.options.onUpdate(room);
+    return result;
+  }
+  private async runBotTurn(turn: BotTurn): Promise<void> {
+    const room = this.rooms.get(turn.roomId);
+    if (!room) return;
+    await room.queue.run(async () => {
+      if (!this.bots.owns(turn)) return;
+      this.usable(room);
+      if (room.revision !== turn.revision || room.match?.id !== turn.matchId)
+        return;
+      const decision = botDecision(room);
+      if (!decision || decision.playerId !== turn.playerId) return;
+      const player = room.seats.find(
+        (entry) => entry?.playerId === turn.playerId,
+      );
+      if (player?.kind !== 'bot') return;
+      await this.applyGame(room, player, {
+        roomId: room.id,
+        commandId: randomUUID(),
+        expectedRevision: turn.revision,
+        command: decision.command,
+      });
+    }, true);
   }
   reconnect(
     connection: Connection,
@@ -515,11 +566,11 @@ export class RoomService {
         next.seats[player.seat] = null;
         if (player.playerId === next.hostId)
           next.hostId =
-            next.seats.find((entry) => entry !== null)?.playerId ?? '';
+            next.seats.find((entry) => entry?.kind === 'human')?.playerId ?? '';
       }
       this.bump(next);
       const result = this.success(next);
-      const remove = next.seats.every((entry) => entry === null);
+      const remove = !next.seats.some((entry) => entry?.kind === 'human');
       await this.commit(room, next, remove);
       if (!remove) this.options.onUpdate(room);
       return result;
@@ -530,6 +581,7 @@ export class RoomService {
     if (!membership) return Promise.resolve();
     const room = this.rooms.get(membership.roomId);
     if (!room) return Promise.resolve();
+    this.bots.cancel(room.id);
     return room.queue.run(async () => {
       if (this.closed || this.blocked.has(room.id)) return;
       const player = room.seats.find(
@@ -610,12 +662,14 @@ export class RoomService {
       await this.write(room);
       this.rooms.set(room.id, room);
       this.scheduleExpiry(room);
+      this.bots.sync(room);
     }
     return [...this.rooms.keys()];
   }
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    this.bots.close();
     for (const roomId of this.expiry.keys()) this.clearExpiry(roomId);
     await Promise.all(
       [...this.rooms.values()].map((room) => room.queue.drain()),

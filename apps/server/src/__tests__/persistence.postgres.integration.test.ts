@@ -17,6 +17,7 @@ import type { Client } from './harness.js';
 import type { Room } from '../rooms/types.js';
 import { createDeck } from '@domino/game-engine';
 import { shuffleDeck } from '@domino/bot-player';
+import { botClock } from './bot-clock.js';
 import type { RealtimeOptions } from '../realtime/socket.js';
 import {
   joinVoice,
@@ -138,6 +139,86 @@ describe.skipIf(!databaseUrl && !required)(
         sessions,
       };
     }
+    it('restores bot lobby memberships and active bot turns across actual server restarts without bot credentials', async () => {
+      const timing = botClock();
+      const a = await server({ botClock: timing.clock, makeDeck: createDeck });
+      const host = await a.connect();
+      const created = await send(host, CLIENT_EVENTS.create, {
+        displayName: 'Host',
+      });
+      if (!created.ok) throw new Error('Expected created room');
+      const roomId = created.roomId,
+        session = host.session!;
+      expect(
+        (
+          await send(host, CLIENT_EVENTS.bots, {
+            roomId,
+            expectedRevision: host.room!.revision,
+            action: { type: 'fill' },
+          })
+        ).ok,
+      ).toBe(true);
+      const bots = (await row(roomId)).players.slice(1);
+      expect(bots.every((p) => p.kind === 'bot' && p.tokenHash === null)).toBe(
+        true,
+      );
+      await stop(a);
+      const b = await server({ botClock: timing.clock, makeDeck: createDeck });
+      const restored = await b.connect();
+      await send(restored, CLIENT_EVENTS.reconnect, session);
+      expect((await row(roomId)).players.slice(1)).toEqual(bots);
+      expect((await send(restored, CLIENT_EVENTS.start, { roomId })).ok).toBe(
+        true,
+      );
+      const before = await row(roomId),
+        stale = timing.next()!;
+      await stop(b);
+      stale.callback();
+      const c = await server({ botClock: timing.clock });
+      expect(timing.next()).toBeUndefined();
+      expect((await row(roomId)).matchState).toEqual(before.matchState);
+      const recovered = await c.connect();
+      await send(recovered, CLIENT_EVENTS.reconnect, session);
+      expect(recovered.room!.isPaused).toBe(false);
+      const revision = recovered.room!.revision;
+      timing.fire();
+      await until(() => recovered.game?.revision === revision + 1);
+      const progressed = await row(roomId);
+      expect(
+        progressed.players
+          .slice(1)
+          .map((p) => [p.playerId, p.kind, p.tokenHash]),
+      ).toEqual(bots.map((p) => [p.playerId, p.kind, p.tokenHash]));
+      expect(progressed.players[3]!.commands).toHaveLength(1);
+      expect(recovered.game!.public.board).toHaveLength(1);
+      expect(
+        recovered.events.filter((e) => e.event === 'room:session'),
+      ).toHaveLength(0);
+    });
+    it('enforces bot credential and kind constraints while defaulting legacy human inserts', async () => {
+      const f = await fixture();
+      await f.service.manageBots(f.owner, {
+        roomId: f.roomId,
+        expectedRevision: f.room().revision,
+        action: { type: 'add', seat: 1 },
+      });
+      await expect(
+        pool.query(
+          "UPDATE room_players SET token_hash=$2 WHERE room_id=$1 AND kind='bot'",
+          [f.roomId, 'a'.repeat(64)],
+        ),
+      ).rejects.toMatchObject({ code: '23514' });
+      await expect(
+        pool.query("UPDATE room_players SET kind='fake' WHERE room_id=$1", [
+          f.roomId,
+        ]),
+      ).rejects.toMatchObject({ code: '23514' });
+      await pool.query(
+        'INSERT INTO room_players(room_id,player_id,display_name,seat,token_hash) VALUES($1,$2,$3,2,NULL)',
+        [f.roomId, randomUUID(), 'Legacy'],
+      );
+      expect((await row(f.roomId)).players[2]!.kind).toBe('human');
+    });
     it('keeps signaling ephemeral without changing persisted game, commands or chat, including across restart', async () => {
       const a = await server();
       const { members, roomId } = await a.started();
@@ -209,7 +290,7 @@ describe.skipIf(!databaseUrl && !required)(
       const migrations = await pool.query(
         'SELECT * FROM drizzle.__drizzle_migrations',
       );
-      expect(migrations.rows).toHaveLength(1);
+      expect(migrations.rows).toHaveLength(2);
     });
     it('restarts actual server instances, reconnects four identities, retains private state and retries, then continues playing', async () => {
       const a = await server();

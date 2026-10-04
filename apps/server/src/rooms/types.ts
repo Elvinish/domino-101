@@ -1,5 +1,5 @@
 import type { MatchState, Seat } from '@domino/game-engine';
-import type { CommandResult } from '@domino/protocol';
+import type { CommandResult, PlayerKind } from '@domino/protocol';
 import type { SerialQueue } from './queue.js';
 
 export interface Connection {
@@ -7,6 +7,7 @@ export interface Connection {
   readonly isConnected: () => boolean;
 }
 export interface Player {
+  readonly kind: PlayerKind;
   readonly playerId: string;
   readonly displayName: string;
   readonly seat: Seat;
@@ -37,6 +38,7 @@ export interface Room {
 }
 export function roomReady(room: Room): boolean {
   return room.seats.every(
-    (player) => player !== null && player.socketId !== null,
+    (player) =>
+      player !== null && (player.kind === 'bot' || player.socketId !== null),
   );
 }

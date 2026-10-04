@@ -37,7 +37,9 @@ export function Feedback({
     status === 'connected' && room && joined
       ? [
           ...room.seats
-            .filter((player) => player && !player.connected)
+            .filter(
+              (player) => player && player.kind !== 'bot' && !player.connected,
+            )
             .map((player) =>
               t('announce.disconnected', { name: player!.displayName }),
             ),

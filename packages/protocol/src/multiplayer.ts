@@ -7,6 +7,7 @@ export const CLIENT_EVENTS = {
   start: 'room:start',
   reconnect: 'room:reconnect',
   leave: 'room:leave',
+  bots: 'room:bots',
   command: 'game:command',
   chat: 'chat:send',
   reaction: 'reaction:send',
@@ -128,6 +129,17 @@ export const reactionReceivedSchema = z.strictObject({
   timestamp: z.number().int().nonnegative(),
 });
 export const startRoomSchema = z.strictObject({ roomId: roomIdSchema });
+export const botActionSchema = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('add'), seat: seatSchema }),
+  z.strictObject({ type: z.literal('remove'), seat: seatSchema }),
+  z.strictObject({ type: z.literal('fill') }),
+]);
+export const roomBotsSchema = z.strictObject({
+  roomId: roomIdSchema,
+  expectedRevision: revisionSchema,
+  action: botActionSchema,
+});
+export const playerKindSchema = z.enum(['human', 'bot']);
 export const gameActionSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('play'),
@@ -203,6 +215,7 @@ export const serverErrorSchema = z.strictObject({
     'room:start',
     'room:reconnect',
     'room:leave',
+    'room:bots',
     'game:command',
     'chat:send',
     'reaction:send',
@@ -223,6 +236,7 @@ export const roomJoinedSchema = z.strictObject({
   seat: seatSchema,
 });
 const playerSchema = z.strictObject({
+  kind: playerKindSchema,
   playerId: playerIdSchema,
   displayName: displayNameSchema,
   seat: seatSchema,
@@ -326,6 +340,9 @@ export type ReactionReceived = z.infer<typeof reactionReceivedSchema>;
 export type CreateRoom = z.infer<typeof createRoomSchema>;
 export type JoinRoom = z.infer<typeof joinRoomSchema>;
 export type StartRoom = z.infer<typeof startRoomSchema>;
+export type RoomBots = z.infer<typeof roomBotsSchema>;
+export type BotAction = z.infer<typeof botActionSchema>;
+export type PlayerKind = z.infer<typeof playerKindSchema>;
 export type GameAction = z.infer<typeof gameActionSchema>;
 export type GameCommand = z.infer<typeof gameCommandSchema>;
 export type CommandResult = z.infer<typeof commandResultSchema>;
@@ -339,6 +356,7 @@ export type ServerError = z.infer<typeof serverErrorSchema>;
 export type Ack = (result: CommandResult) => void;
 export type SocialAck = (result: SocialResult) => void;
 export interface ClientToServerEvents extends VoiceClientEvents {
+  'room:bots': (payload: RoomBots, ack?: Ack) => void;
   'room:reconnect': (payload: ReconnectSession, ack?: Ack) => void;
   'room:leave': (payload: LeaveRoom, ack?: Ack) => void;
   'room:create': (payload: CreateRoom, ack?: Ack) => void;

@@ -8,6 +8,13 @@
       "when": 1790926860109,
       "tag": "0000_phase8_persistence",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791092884783,
+      "tag": "0001_dev_bots",
+      "breakpoints": true
     }
   ]
 }

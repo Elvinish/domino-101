@@ -22,6 +22,7 @@ export function projectRoom(room: Room): RoomSnapshot {
     seats: room.seats.map((player) =>
       player
         ? {
+            kind: player.kind,
             playerId: player.playerId,
             displayName: player.displayName,
             seat: player.seat,
