@@ -1,4 +1,27 @@
 export const en = {
+  'voice.title': 'Voice chat',
+  'voice.enable': 'Enable microphone',
+  'voice.micOff': 'Microphone off',
+  'voice.micEnabled': 'Microphone enabled',
+  'voice.mute': 'Mute microphone',
+  'voice.muted': 'Muted',
+  'voice.unmute': 'Unmute microphone',
+  'voice.leave': 'Leave voice',
+  'voice.denied':
+    'Microphone permission denied. Allow access in your browser, then try again.',
+  'voice.noMic': 'No microphone available. Connect a microphone and try again.',
+  'voice.unavailable':
+    'Voice unavailable. Leave and rejoin voice to try again.',
+  'voice.deviceEnded':
+    'The microphone disconnected. Enable it again when it is available.',
+  'voice.joining': 'Joining voice…',
+  'voice.connecting': 'Connecting',
+  'voice.connected': 'Connected',
+  'voice.notJoined': 'Not in voice',
+  'voice.peerDisconnected': 'Peer disconnected',
+  'voice.retry': 'Reconnect voice',
+  'voice.audioFor': 'Voice audio from {name}',
+  'voice.playAudio': 'Play voice audio from {name}',
   'errors.reconnectFailed':
     'Automatic reconnect stopped. Your saved seat is kept. Retry when your connection is available.',
   'app.language': 'Language',

@@ -11,6 +11,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     trace: 'off',
     screenshot: 'only-on-failure',
+    launchOptions: { args: ['--use-fake-device-for-media-stream'] },
   },
   projects: [
     {
@@ -46,7 +47,10 @@ export default defineConfig({
       command:
         'pnpm --filter @domino/web build && pnpm --filter @domino/web preview --host 127.0.0.1 --port 4173 --strictPort',
       url: 'http://127.0.0.1:4173',
-      env: { VITE_API_BASE_URL: 'http://127.0.0.1:3101' },
+      env: {
+        VITE_API_BASE_URL: 'http://127.0.0.1:3101',
+        VITE_WEBRTC_ICE_SERVERS: '[]',
+      },
       reuseExistingServer: false,
     },
   ],

@@ -1,5 +1,27 @@
 import type { Messages } from './en';
 export const az: Messages = {
+  'voice.title': 'Səsli söhbət',
+  'voice.enable': 'Mikrofonu aktiv et',
+  'voice.micOff': 'Mikrofon sönülüdür',
+  'voice.micEnabled': 'Mikrofon aktivdir',
+  'voice.mute': 'Mikrofonun səsini kəs',
+  'voice.muted': 'Səs kəsilib',
+  'voice.unmute': 'Mikrofonun səsini aç',
+  'voice.leave': 'Səsli söhbətdən çıx',
+  'voice.denied':
+    'Mikrofona girişə icazə verilmədi. Brauzerdə icazə verin və yenidən cəhd edin.',
+  'voice.noMic': 'Mikrofon tapılmadı. Mikrofonu qoşun və yenidən cəhd edin.',
+  'voice.unavailable': 'Səsli əlaqə əlçatan deyil. Çıxın və yenidən qoşulun.',
+  'voice.deviceEnded':
+    'Mikrofonun bağlantısı kəsildi. Əlçatan olduqda onu yenidən aktiv edin.',
+  'voice.joining': 'Səsli söhbətə qoşulur…',
+  'voice.connecting': 'Qoşulur',
+  'voice.connected': 'Qoşuldu',
+  'voice.notJoined': 'Səsli söhbətdə deyil',
+  'voice.peerDisconnected': 'İştirakçının bağlantısı kəsildi',
+  'voice.retry': 'Səsli söhbətə yenidən qoşul',
+  'voice.audioFor': '{name} iştirakçısının səsi',
+  'voice.playAudio': '{name} iştirakçısının səsini səsləndir',
   'errors.reconnectFailed':
     'Avtomatik qoşulma dayandı. Yeriniz saxlanılıb. Əlaqə bərpa olunanda yenidən cəhd edin.',
   'app.language': 'Dil',

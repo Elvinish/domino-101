@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { VoiceClientEvents, VoiceServerEvents } from './voice.js';
 
 export const CLIENT_EVENTS = {
   create: 'room:create',
@@ -205,6 +206,13 @@ export const serverErrorSchema = z.strictObject({
     'game:command',
     'chat:send',
     'reaction:send',
+    'voice:join',
+    'voice:ready',
+    'voice:offer',
+    'voice:answer',
+    'voice:ice',
+    'voice:leave',
+    'voice:state',
   ]),
   code: errorCodeSchema,
   commandId: z.uuid().optional(),
@@ -330,7 +338,7 @@ export type PublicGame = z.infer<typeof publicGameSchema>;
 export type ServerError = z.infer<typeof serverErrorSchema>;
 export type Ack = (result: CommandResult) => void;
 export type SocialAck = (result: SocialResult) => void;
-export interface ClientToServerEvents {
+export interface ClientToServerEvents extends VoiceClientEvents {
   'room:reconnect': (payload: ReconnectSession, ack?: Ack) => void;
   'room:leave': (payload: LeaveRoom, ack?: Ack) => void;
   'room:create': (payload: CreateRoom, ack?: Ack) => void;
@@ -340,7 +348,7 @@ export interface ClientToServerEvents {
   'chat:send': (payload: ChatCommand, ack?: SocialAck) => void;
   'reaction:send': (payload: ReactionCommand, ack?: SocialAck) => void;
 }
-export interface ServerToClientEvents {
+export interface ServerToClientEvents extends VoiceServerEvents {
   'room:session': (payload: ReconnectSession) => void;
   'room:replaced': (payload: z.infer<typeof roomReplacedSchema>) => void;
   'chat:message': (payload: ChatMessage) => void;

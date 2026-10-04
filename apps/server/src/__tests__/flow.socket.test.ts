@@ -4,6 +4,7 @@ import type { BotCommand, BotView } from '@domino/bot-player';
 import type { GameAction, GameSnapshot } from '@domino/protocol';
 import {
   CLIENT_EVENTS,
+  voiceServerSchemas,
   SERVER_EVENTS,
   gameSnapshotSchema,
   roomSnapshotSchema,
@@ -102,6 +103,7 @@ it('four real clients finish a bot-assisted match using only private wire projec
   let revision = 5;
   const rng = [11, 22, 33, 44];
   const schemas = {
+    ...voiceServerSchemas,
     [SERVER_EVENTS.joined]: roomJoinedSchema,
     [SERVER_EVENTS.session]: roomSessionSchema,
     [SERVER_EVENTS.replaced]: roomReplacedSchema,

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CLIENT_EVENTS,
+  voiceServerSchemas,
   SERVER_EVENTS,
   gameSnapshotSchema,
   roomSnapshotSchema,
@@ -409,6 +410,7 @@ describe('network authority, revisions and privacy', () => {
     const h = await setup();
     const { members } = await h.started();
     const schemas = {
+      ...voiceServerSchemas,
       [SERVER_EVENTS.joined]: roomJoinedSchema,
       [SERVER_EVENTS.session]: roomSessionSchema,
       [SERVER_EVENTS.replaced]: roomReplacedSchema,

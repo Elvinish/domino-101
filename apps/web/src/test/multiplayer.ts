@@ -81,6 +81,7 @@ export function fakeClient(sessions?: SessionStore) {
       listeners.set(event, callback);
     }),
     emit: vi.fn(),
+    off: vi.fn((event: string) => listeners.delete(event)),
     connect: vi.fn(() => {
       socket.connected = true;
       listeners.get('connect')?.();

@@ -75,7 +75,10 @@ function AppContent({
   const [client] = useState(
     () =>
       provided ??
-      createMultiplayerClient(parseWebEnv(import.meta.env).VITE_API_BASE_URL),
+      createMultiplayerClient(
+        parseWebEnv(import.meta.env).VITE_API_BASE_URL,
+        parseWebEnv(import.meta.env).VITE_WEBRTC_ICE_SERVERS,
+      ),
   );
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const navigate = useNavigate();

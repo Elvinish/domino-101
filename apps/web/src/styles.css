@@ -1290,3 +1290,49 @@ button,
     max-height: 40dvh;
   }
 }
+/* Optional voice stays in document flow below gameplay, alongside room chat. */
+.voice-panel {
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid #ffffff30;
+  border-radius: 1rem;
+}
+.voice-heading,
+.voice-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.voice-heading {
+  justify-content: space-between;
+}
+.voice-heading h2,
+.voice-heading p {
+  margin: 0 0 0.75rem;
+}
+.voice-participants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+.voice-participants li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.voice-name {
+  font-weight: 700;
+}
+.voice-participants audio {
+  display: none;
+}
+@media (max-width: 480px) {
+  .voice-participants {
+    grid-template-columns: 1fr;
+  }
+}

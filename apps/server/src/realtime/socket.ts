@@ -20,6 +20,7 @@ import {
   socialResultSchema,
   serverErrorSchema,
   startRoomSchema,
+  voiceServerSchemas,
 } from '@domino/protocol';
 import type {
   ClientToServerEvents,
@@ -35,6 +36,8 @@ import type { RoomServiceOptions } from '../rooms/service.js';
 import { ChatService } from '../chat/service.js';
 import type { ChatServiceOptions } from '../chat/service.js';
 import type { PersistenceStore } from '../persistence/types.js';
+import { VoiceService } from '../voice/service.js';
+import { attachVoice } from '../voice/socket.js';
 
 export type RealtimeOptions = Pick<
   RoomServiceOptions,
@@ -67,19 +70,24 @@ export function attachRealtime(
         { roomId, code: 'PERSISTENCE_WRITE_FAILED' },
         'Room locked pending recovery',
       ),
-    onRoomRemoved: (roomId) => chat.removeRoom(roomId),
+    onRoomRemoved: (roomId) => {
+      chat.removeRoom(roomId);
+      voice.removeRoom(roomId);
+    },
     onSession: (socketId, session) => {
       io.sockets.sockets
         .get(socketId)
         ?.emit(SERVER_EVENTS.session, roomSessionSchema.parse(session));
     },
     onReplaced: (socketId) => {
+      voice.removeSocket(socketId);
       io.sockets.sockets.get(socketId)?.emit(SERVER_EVENTS.replaced, {});
     },
     onJoined: (socketId, joined) => {
       io.sockets.sockets
         .get(socketId)
         ?.emit(SERVER_EVENTS.joined, roomJoinedSchema.parse(joined));
+      voice.participantsFor(socketId, joined.roomId);
     },
     onUpdate: (room) => {
       const publicRoom = projectRoom(room);
@@ -94,6 +102,25 @@ export function attachRealtime(
     },
   };
   const rooms = new RoomService(roomOptions);
+  const voice = new VoiceService({
+    resolveMember: (connection, roomId) => rooms.chatMember(connection, roomId),
+    connection: (id) => ({
+      id,
+      isConnected: () => io.sockets.sockets.get(id)?.connected === true,
+    }),
+    recipients: (roomId) => rooms.chatRecipients(roomId),
+    runRoom: (roomId, operation) => rooms.runRoom(roomId, operation),
+    emit: (id, event, payload) => {
+      const socket = io.sockets.sockets.get(id);
+      if (!socket?.connected) return;
+      // Preserve the event/payload pairing already enforced by VoiceServiceOptions.
+      const emit = socket.emit.bind(socket) as (
+        name: string,
+        value: unknown,
+      ) => void;
+      emit(event, voiceServerSchemas[event].parse(payload));
+    },
+  });
   const chatOptions: ChatServiceOptions = {
     resolveMember: (connection, roomId) => rooms.chatMember(connection, roomId),
     recipients: (roomId) => rooms.chatRecipients(roomId),
@@ -130,6 +157,7 @@ export function attachRealtime(
     }
   });
   io.on('connection', (socket) => {
+    attachVoice(socket, voice);
     const connection = { id: socket.id, isConnected: () => socket.connected };
     async function handle<T>(
       event: keyof ClientToServerEvents,
@@ -267,7 +295,10 @@ export function attachRealtime(
     socket.on(CLIENT_EVENTS.leave, (payload, ack) =>
       safe(
         handle(CLIENT_EVENTS.leave, leaveRoomSchema, payload, ack, (value) =>
-          rooms.leave(connection, value),
+          rooms.leave(connection, value).then((result) => {
+            if (result.ok) voice.removeSocket(socket.id);
+            return result;
+          }),
         ),
       ),
     );
@@ -312,6 +343,7 @@ export function attachRealtime(
       ),
     );
     socket.on('disconnect', () => {
+      voice.removeSocket(socket.id);
       void rooms
         .disconnect(socket.id)
         .catch(() =>

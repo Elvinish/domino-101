@@ -18,6 +18,12 @@ import type { Room } from '../rooms/types.js';
 import { createDeck } from '@domino/game-engine';
 import { shuffleDeck } from '@domino/bot-player';
 import type { RealtimeOptions } from '../realtime/socket.js';
+import {
+  joinVoice,
+  sendVoice,
+  TEST_AUDIO_SDP,
+  TEST_ICE,
+} from './voice-harness.js';
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const required = process.env.DOMINO_REQUIRE_POSTGRES === '1';
@@ -132,6 +138,63 @@ describe.skipIf(!databaseUrl && !required)(
         sessions,
       };
     }
+    it('keeps signaling ephemeral without changing persisted game, commands or chat, including across restart', async () => {
+      const a = await server();
+      const { members, roomId } = await a.started();
+      const persisted = () =>
+        pool
+          .query(
+            `SELECT row_to_json(r) AS room,
+        (SELECT json_agg(p ORDER BY p.seat) FROM room_players p WHERE p.room_id=r.room_id) AS players,
+        (SELECT json_agg(c) FROM room_commands c WHERE c.room_id=r.room_id) AS commands,
+        (SELECT json_agg(c) FROM room_chat c WHERE c.room_id=r.room_id) AS chat
+        FROM room_records r WHERE r.room_id=$1`,
+            [roomId],
+          )
+          .then((result) => result.rows);
+      const before = await persisted();
+      const sessions = await Promise.all(members.slice(0, 2).map(joinVoice));
+      const fields = {
+        roomId,
+        voiceId: sessions[0]!.voiceId,
+        targetId: members[1]!.joined!.playerId,
+        targetVoiceId: sessions[1]!.voiceId,
+      };
+      expect(
+        await sendVoice(members[0]!, 'voice:offer', {
+          ...fields,
+          sdp: TEST_AUDIO_SDP,
+        }),
+      ).toEqual({ ok: true });
+      expect(
+        await sendVoice(members[0]!, 'voice:ice', {
+          ...fields,
+          candidate: TEST_ICE,
+        }),
+      ).toEqual({ ok: true });
+      expect(
+        await sendVoice(members[0]!, 'voice:state', {
+          roomId,
+          voiceId: sessions[0]!.voiceId,
+          muted: true,
+        }),
+      ).toEqual({ ok: true });
+      expect(await persisted()).toEqual(before);
+      expect(JSON.stringify(before)).not.toContain('private-signaling-fixture');
+      for (const session of sessions)
+        expect(JSON.stringify(before)).not.toContain(session.voiceId);
+      const reconnect = members[0]!.session!;
+      await stop(a);
+      const b = await server();
+      const member = await b.connect();
+      const snapshots: unknown[] = [];
+      member.socket.on('voice:participants', (value) => snapshots.push(value));
+      expect((await send(member, CLIENT_EVENTS.reconnect, reconnect)).ok).toBe(
+        true,
+      );
+      await until(() => snapshots.length > 0);
+      expect(snapshots.at(-1)).toEqual({ roomId, participants: [] });
+    });
     it('applies checked-in Drizzle migrations to the test database and safely repeats them', async () => {
       await observer.initialize();
       const tables = await pool.query<{ tablename: string }>(

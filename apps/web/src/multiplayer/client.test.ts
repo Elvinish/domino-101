@@ -26,6 +26,22 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('multiplayer transport state', () => {
+  it.each(['disconnect', 'room:replaced'])(
+    'resets voice on %s and rebinds membership without enabling microphone',
+    (event) => {
+      const f = seated();
+      const reset = vi.spyOn(f.client.voice, 'reset');
+      const enable = vi.spyOn(f.client.voice, 'enableMicrophone');
+      const membership = vi.spyOn(f.client.voice, 'setMembership');
+      if (event === 'disconnect') f.socket.disconnect();
+      else f.receive(event, {});
+      expect(reset).toHaveBeenCalled();
+      f.socket.connect();
+      f.receive('room:joined', own);
+      expect(membership).toHaveBeenCalledWith(own);
+      expect(enable).not.toHaveBeenCalled();
+    },
+  );
   it('ignores queued private snapshots after disconnect', () => {
     const f = seated();
     f.socket.disconnect();

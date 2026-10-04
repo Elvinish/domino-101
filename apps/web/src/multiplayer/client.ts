@@ -35,6 +35,7 @@ import { errorMessages } from './errors';
 import type { MessageKey } from '../i18n';
 import { browserSessions } from './session';
 import type { SessionStore } from './session';
+import { VoiceClient } from '../voice/client';
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 export interface ClientState {
@@ -85,6 +86,7 @@ export class MultiplayerClient {
   constructor(
     private readonly makeSocket: () => GameSocket,
     private readonly sessions: SessionStore = browserSessions(),
+    readonly voice: VoiceClient = new VoiceClient(),
   ) {}
   setRoom = (roomId: string | null) => {
     this.desiredRoom = roomId;
@@ -130,6 +132,7 @@ export class MultiplayerClient {
     if (this.socket) return;
     const socket = this.makeSocket();
     this.socket = socket;
+    this.voice.bind(socket);
     this.update({ status: 'connecting', error: null });
     const attempting = () => {
       if (this.socket === socket && !this.state.replaced)
@@ -183,6 +186,7 @@ export class MultiplayerClient {
       const parsed = roomJoinedSchema.safeParse(payload);
       if (!parsed.success) return this.invalid();
       this.update({ joined: parsed.data });
+      this.voice.setMembership(parsed.data);
     });
     socket.on(SERVER_EVENTS.chatHistory, (payload) => {
       if (this.state.status !== 'connected' || this.socket !== socket) return;
@@ -249,6 +253,7 @@ export class MultiplayerClient {
     this.socket?.disconnect();
   }
   private lost(message: MessageKey) {
+    this.voice.reset();
     this.cancelRequest?.();
     this.cancelSocial?.();
     this.update({
@@ -265,6 +270,7 @@ export class MultiplayerClient {
     });
   }
   dispose = () => {
+    this.voice.unbind();
     this.removeManagerListeners?.();
     this.removeManagerListeners = null;
     this.cancelRequest?.();
@@ -275,6 +281,7 @@ export class MultiplayerClient {
     this.update(initialState());
   };
   leave = async () => {
+    this.voice.leave();
     const roomId = this.state.joined?.roomId ?? this.desiredRoom;
     // A replaced tab must not erase the active tab's shared localStorage credential.
     if (roomId && !this.state.replaced) this.sessions.clear(roomId);
@@ -475,17 +482,23 @@ export class MultiplayerClient {
     );
   };
 }
-export function createMultiplayerClient(url: string) {
-  return new MultiplayerClient(() =>
-    io(url, {
-      autoConnect: false,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 500,
-      reconnectionDelayMax: 3000,
-      forceNew: true,
-      transports: ['websocket', 'polling'],
-      tryAllTransports: true,
-    }),
+export function createMultiplayerClient(
+  url: string,
+  iceServers?: RTCIceServer[],
+) {
+  return new MultiplayerClient(
+    () =>
+      io(url, {
+        autoConnect: false,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 3000,
+        forceNew: true,
+        transports: ['websocket', 'polling'],
+        tryAllTransports: true,
+      }),
+    undefined,
+    new VoiceClient(iceServers),
   );
 }

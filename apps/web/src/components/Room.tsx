@@ -5,6 +5,7 @@ import type { ClientState, MultiplayerClient } from '../multiplayer/client';
 import { Seats } from './Seats';
 import { GameTable } from './GameTable';
 import { ChatPanel } from './ChatPanel';
+import { VoicePanel } from './VoicePanel';
 
 export function Room({
   client,
@@ -111,6 +112,14 @@ export function Room({
             ? t('room.hiddenHand')
             : t('room.receiving')}
         </p>
+      )}
+      {!state.replaced && (
+        <VoicePanel
+          voice={client.voice}
+          room={room}
+          own={joined}
+          disabled={state.status !== 'connected' || state.restoring}
+        />
       )}
       {!state.replaced && (
         <ChatPanel

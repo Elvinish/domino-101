@@ -1,7 +1,7 @@
 # Domino 101
 
 Azerbaijani-style Domino “101”: four guests, two opposing teams, private rooms.
-**Rebuild status: Phases 0–8 implemented.** The pure engine, deterministic QA bots, authoritative Socket.IO room server, responsive React multiplayer UI, secure reconnect, room chat/reactions and PostgreSQL persistence are implemented. Four friends can create a private room, play a complete match, and restore their seats after refresh, a temporary disconnect or a server restart in PostgreSQL mode. English, Russian and Azerbaijani UI, accessible state feedback and optional quiet sound cues are included. Phase 9 voice chat remains deferred.
+**Rebuild status: Phases 0–9 implemented.** The pure engine, deterministic QA bots, authoritative Socket.IO room server, responsive React multiplayer UI, secure reconnect, room chat/reactions and PostgreSQL persistence are implemented. Four friends can create a private room, play a complete match, and restore their seats after refresh, a temporary disconnect or a server restart in PostgreSQL mode. English, Russian and Azerbaijani UI, accessible state feedback and optional quiet sound cues are included. Optional audio-only room voice chat uses a four-player WebRTC mesh, with microphones off until explicitly enabled.
 
 ## Requirements and quick start
 
@@ -28,7 +28,7 @@ apps/
   server/          Fastify + Socket.IO, authoritative rooms, Drizzle/PostgreSQL and private projections
 packages/
   game-engine/     Pure deterministic game engine, scoring and match state machine
-  protocol/        Shared strict Zod health, room, command, chat and snapshot contracts
+  protocol/        Shared strict Zod health, room, command, chat, voice signaling and snapshot contracts
   bot-player/      Deterministic strategies, seeded full-match simulation and invariant checks
 docs/              Authoritative rules, product/architecture design, phase reports
 ```
@@ -55,6 +55,7 @@ introduced at this stage.
 | `pnpm test`                         | Run all Vitest projects once, including Fastify integration and React tests |
 | `pnpm test:watch`                   | Watch the test suite                                                        |
 | `pnpm test:postgres`                | Run required real PostgreSQL integration tests using `TEST_DATABASE_URL`    |
+| `pnpm test:voice`                   | Run voice protocol, signaling, lifecycle, UI and ICE configuration tests    |
 | `pnpm test:socket`                  | Run the existing real Socket.IO integration tests                           |
 | `pnpm db:generate`                  | Generate Drizzle migration SQL and metadata after schema changes            |
 | `pnpm db:migrate`                   | Apply checked-in migrations using `DATABASE_URL`                            |
@@ -76,7 +77,7 @@ is validated and used by the multiplayer client to connect to Socket.IO.
 
 - `game-engine` has no runtime dependencies, Node typings, DOM libraries, framework,
   transport, or database code. Lint prevents non-relative production imports.
-- `protocol` owns shared typed DTOs and strict runtime schemas for health and multiplayer events through Phase 6; Phase 7 adds frontend localization and feedback without changing the wire contracts.
+- `protocol` owns shared typed DTOs and strict runtime schemas for health and multiplayer events, including Phase 9 voice signaling.
 - `bot-player` strategies see only their own hand and public information. The QA runner submits normal engine commands and checks invariants; bots never score or mutate game state.
 - The server owns guest identity, seat assignment, per-room command serialization,
   revisions, bounded command idempotency, private projections and hashed reconnect
@@ -85,8 +86,8 @@ is validated and used by the multiplayer client to connect to Socket.IO.
   come from the server. It never imports the game engine or calculates official scores.
 - PostgreSQL/Drizzle persists versioned authoritative state behind a repository
   boundary. Room writes commit before in-memory publication, broadcast or success
-  acknowledgement. WebRTC remains deferred. Room chat is Socket.IO text delivery
-  only; it does not carry audio or media.
+  acknowledgement. Voice uses browser WebRTC connections; Socket.IO carries only
+  validated signaling. Audio never passes through the game server or PostgreSQL.
 
 ## Rules and scope
 
@@ -105,7 +106,7 @@ privacy and disconnect limitations.
 privacy checks.
 [Phase 5 report](docs/PHASE_5.md) documents secure reconnect, local sessions and stale
 socket replacement. [Phase 6 report](docs/PHASE_6.md) documents room chat, reactions,
-limits, isolation and browser behavior. [Phase 7 report](docs/PHASE_7.md) covers localization, sound, accessibility and responsive polish. [Phase 8 report](docs/PHASE_8.md) documents PostgreSQL transactions, restart recovery, privacy, exact verification results and production limitations.
+limits, isolation and browser behavior. [Phase 7 report](docs/PHASE_7.md) covers localization, sound, accessibility and responsive polish. [Phase 8 report](docs/PHASE_8.md) documents PostgreSQL transactions, restart recovery, privacy, exact verification results and production limitations. [Phase 9 report](docs/PHASE_9.md) covers room voice, its security and lifecycle, and final project verification.
 
 ## QA simulations
 
@@ -160,7 +161,8 @@ pnpm test:e2e
 
 Runs four real browser clients against production-built web and server apps on
 isolated ports 4173 and 3101. Desktop completes a match; tablet and phone exercise
-real gameplay and disconnect handling. The tests audit received private projections,
+real gameplay and disconnect handling. Voice scenarios verify actual local audio
+transport with fake capture devices on all three layouts. The tests audit received private projections,
 rendered hands and horizontal page overflow. Local screenshots go to ignored
 `test-results/`. Run `pnpm build` afterward to restore the normal web environment
 configuration. Browser tests are separate from `pnpm verify`.
@@ -191,6 +193,43 @@ socket membership and sends history only to the requesting room member; stale
 sockets and cross-room attempts are rejected. See [Phase 6](docs/PHASE_6.md) for
 the protocol, privacy audit and verification record.
 
+## Room voice
+
+Voice is optional in both lobby and match. Choose **Enable microphone** to join,
+then **Mute microphone**, **Unmute microphone** or **Leave voice**. Muting keeps the
+existing track but disables outgoing audio; leaving stops it. Reload, disconnect,
+replacement by another tab and page teardown stop voice. Reconnecting the table
+requires another explicit microphone action. Permission or connection failures
+leave game and chat usable. Remote audio that the browser blocks has a **Play voice
+audio** button. No speaking indicator, video, recording or media persistence exists.
+
+Up to four players connect in a mesh (at most three peers each). The lower seat
+initiates each offer; a new voice session invalidates old offers and ICE. Every
+signal is authorized against the current socket and room. Names and sender IDs
+come from the server. SDP and ICE are neither logged nor persisted.
+
+`VITE_WEBRTC_ICE_SERVERS` is validated JSON, embedded at web build time. Omit it for
+`[{"urls":["stun:stun.l.google.com:19302"]}]`; use `[]` for host-only local tests.
+An example configuration is in `.env.example`. TURN URLs need `username` and
+`credential`. Browser credentials are public: use scoped, short-lived credentials
+in production, never an administrative secret. A dynamic credential issuer is
+not implemented. Without TURN, some NAT/firewall combinations cannot connect.
+TURN is configurable but has not been provisioned or tested against a live relay.
+Production microphone access requires HTTPS (localhost is permitted for development).
+P2P connection setup can reveal network addresses to other room participants;
+STUN is contacted only after voice is enabled and a peer connection is needed.
+
+`pnpm test:voice` runs focused tests. Playwright checks received audio RTP packets,
+playback, a four-participant desktop mesh, mute/unmute, refresh cleanup and touch
+controls at phone/tablet sizes. It requests Chromium fake microphone devices by
+default. On this macOS environment native fake capture failed with
+`NotSupportedError` (other Chromium modes stalled). Final browser verification used
+`DOMINO_E2E_SYNTHETIC_AUDIO=1 pnpm test:e2e`: a test-only Web Audio source replaces
+capture while peer connections, signaling, RTP and playback remain native. This
+fallback is explicit, never automatic, and does not exist in the production app.
+Native microphone acquisition, physical audio quality, Safari/iOS and restrictive
+network paths remain unverified. See [Phase 9](docs/PHASE_9.md) for exact final results and limitations.
+
 ## Language, accessibility and sound
 
 Choose English, Русский or Azərbaycanca in the header; changes take effect without
@@ -201,7 +240,7 @@ values and room codes are never translated.
 Sound starts muted. Enable sound to opt into short synthesized cues for turns,
 tile placements and results. The preference is stored under `domino101.sound`;
 even with a saved opt-in, each new page waits for a user gesture before activating
-audio. There is no microphone use or remote audio service.
+audio. These cues are separate from room voice; enabling sound does not enable the microphone.
 
 Keyboard users can skip to the game, reach legal actions, choose an end and use
 Escape to cancel that choice. Turn/player/pending states include text and marks,
@@ -265,3 +304,19 @@ multi-instance deployment. Provide PostgreSQL, persistent storage, backups and
 restore procedures, appropriate database access controls/TLS, HTTPS/WSS, the exact
 `WEB_ORIGIN`, and monitoring. Database tables and backups contain private hands
 and chat; only reconnect-token hashes are stored. No hosting or TURN is provisioned.
+
+## Final Phase 9 verification
+
+All final local checks passed: frozen install, Prettier, lint, full typecheck,
+**496 Vitest tests / 40 files**, **15 PostgreSQL integration tests**,
+**51 Socket.IO tests**, **75 focused voice tests**, production build, clean/repeated
+compiled migrations, production-process restart smoke and **12 Playwright scenarios**
+(4 desktop, 4 tablet, 4 phone). The focused suites are subsets of Vitest.
+
+Browser voice used the explicit synthetic-capture fallback described above; native
+WebRTC audio packet transport and playback were verified, native microphone capture
+was not. Ready for a controlled single-instance staging deployment with PostgreSQL,
+HTTPS/WSS and ICE configuration. Broad production voice reliability still needs
+physical-device and TURN/NAT validation. No deployment or infrastructure was
+provisioned. See [Phase 9](docs/PHASE_9.md) for exact commands, privacy checks and
+remaining limitations.

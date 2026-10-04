@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
 import {
   gameSnapshotSchema,
+  voiceServerSchemas,
   roomSnapshotSchema,
   roomJoinedSchema,
   roomSessionSchema,
@@ -60,6 +61,7 @@ async function noOverflow(page: Page) {
 }
 function audit(players: Observer[]) {
   const schemas = {
+    ...voiceServerSchemas,
     'room:joined': roomJoinedSchema,
     'room:session': roomSessionSchema,
     'room:replaced': roomReplacedSchema,

@@ -25,7 +25,8 @@
     "simulate": "pnpm build:packages && node scripts/simulate.ts",
     "test:socket": "pnpm build:packages && vitest run apps/server/src/__tests__/*.socket.test.ts",
     "test:postgres": "pnpm build:packages && DOMINO_REQUIRE_POSTGRES=1 vitest run apps/server/src/__tests__/persistence.postgres.integration.test.ts",
-    "test:e2e": "pnpm build:packages && pnpm --filter @domino/server build && playwright test"
+    "test:e2e": "pnpm build:packages && pnpm --filter @domino/server build && playwright test",
+    "test:voice": "pnpm build:packages && vitest run packages/protocol/src/voice.test.ts apps/server/src/voice apps/server/src/__tests__/voice.socket.test.ts apps/web/src/voice apps/web/src/components/VoicePanel.test.tsx apps/web/src/config/env.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
