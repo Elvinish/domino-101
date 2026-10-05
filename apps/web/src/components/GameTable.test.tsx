@@ -20,7 +20,7 @@ describe('authoritative table presentation and controls', () => {
     game.public.openEnds = { left: 2, right: 1 };
     setup(game);
     const board = screen.getByRole('list', {
-      name: 'Played tiles, left to right',
+      name: 'Played tiles, in chain order',
     });
     expect(within(board).getByLabelText('Played 2:1')).toBeVisible();
     expect(board.querySelectorAll('.double')).toHaveLength(1);

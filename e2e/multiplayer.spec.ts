@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectChainFits } from './chain-checks';
 import type { BrowserContext, Page } from '@playwright/test';
 import {
   gameSnapshotSchema,
@@ -188,6 +189,7 @@ test('four friends create, join, play and keep private hands isolated', async ({
           );
         }),
       );
+      await expectChainFits(host);
       const actor = players.find(
         (player) => player.latest!.private.legalActions.length > 0,
       )!;

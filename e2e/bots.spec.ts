@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectChainFits } from './chain-checks';
 import { gameSnapshotSchema } from '../packages/protocol/src/index';
 import type { GameSnapshot } from '../packages/protocol/src/index';
 
@@ -65,6 +66,7 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
       game.public.phase === 'match-finished'
     )
       break;
+    await expectChainFits(page);
     const available = game.private.legalActions,
       action = available[0];
     if (action) {
@@ -106,8 +108,19 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
   expect(sessions).toBe(1);
   expect(errors).toEqual([]);
   await noOverflow();
+  await expectChainFits(page);
   await page.screenshot({
     path: `test-results/${info.project.name}-bot-round.png`,
     fullPage: true,
   });
+  // A completed round is stable while checking responsive reflow in both directions.
+  for (const width of [
+    320,
+    600,
+    1100,
+    info.project.use.viewport?.width ?? 1440,
+  ]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expectChainFits(page);
+  }
 });

@@ -7,6 +7,7 @@ import type {
   RoomSnapshot,
 } from '@domino/protocol';
 import { Domino } from './Domino';
+import { DominoChain } from './DominoChain';
 import { Seats } from './Seats';
 import { tableStatus } from './tableStatus';
 
@@ -104,33 +105,14 @@ export function GameTable({
               <span>{t('game.right', { value: state.openEnds.right })}</span>
             </div>
           )}
-          <div
-            className="board-scroll"
-            tabIndex={0}
-            aria-label={t('game.scrollLabel')}
-          >
-            <ol className="board" aria-label={t('game.boardLabel')}>
-              {state.board.map((piece) => (
-                <li
-                  key={piece.tile}
-                  aria-label={t('game.played', {
-                    tile: `${piece.left}:${piece.right}`,
-                  })}
-                >
-                  <Domino left={piece.left} right={piece.right} />
-                </li>
-              ))}
-            </ol>
-            {state.board.length === 0 && (
-              <p className="empty-board">
-                {state.phase === 'starter-selection'
-                  ? t('game.emptySelection')
-                  : t('game.emptyBoard')}
-              </p>
-            )}
-          </div>
-          {state.board.length > 4 && (
-            <p className="board-hint">{t('game.scrollHint')}</p>
+          {state.board.length ? (
+            <DominoChain board={state.board} />
+          ) : (
+            <p className="empty-board">
+              {state.phase === 'starter-selection'
+                ? t('game.emptySelection')
+                : t('game.emptyBoard')}
+            </p>
           )}
           {state.starter !== null && (
             <p className="starter-note">
