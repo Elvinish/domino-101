@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CueTracker, SoundService, soundKey } from './service';
+import {
+  CueTracker,
+  placementSamples,
+  SoundService,
+  soundKey,
+} from './service';
 import type { SoundView } from './service';
 import { gameFixture } from '../test/multiplayer';
 
@@ -58,17 +63,74 @@ describe('gesture-activated sound service', () => {
     const audio = fakeAudio();
     const sound = new SoundService(audio.factory);
     sound.toggle();
-    sound.play('tile-placed');
+    sound.play('your-turn');
     expect(localStorage.getItem(soundKey)).toBe('on');
-    expect(audio.context.createOscillator).toHaveBeenCalledTimes(1);
+    expect(audio.context.createOscillator).toHaveBeenCalledTimes(2);
     sound.toggle();
-    sound.play('tile-placed');
+    sound.play('your-turn');
     expect(audio.oscillator.stop).toHaveBeenCalled();
     expect(audio.oscillator.disconnect).toHaveBeenCalled();
     expect(audio.gain.disconnect).toHaveBeenCalled();
     expect(audio.context.close).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem(soundKey)).toBe('off');
-    expect(audio.context.createOscillator).toHaveBeenCalledTimes(1);
+    expect(audio.context.createOscillator).toHaveBeenCalledTimes(2);
+  });
+  it('plays rotating recorded-placement assets with subtle rate and level variation', () => {
+    localStorage.setItem(soundKey, 'on');
+    const clips = placementSamples.map(() => ({
+      src: '',
+      volume: 1,
+      playbackRate: 1,
+      currentTime: 0,
+      muted: false,
+      play: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn(),
+    }));
+    const makeClip = vi.fn((src: string) => {
+      const index = placementSamples.indexOf(
+        src as (typeof placementSamples)[number],
+      );
+      return clips[index]!;
+    });
+    const values = [0, 1, 0.5, 0.5];
+    const sound = new SoundService(
+      () => fakeAudio().context as unknown as AudioContext,
+      () => localStorage,
+      makeClip,
+      () => values.shift() ?? 0.5,
+    );
+    sound.unlock();
+    sound.play('tile-placed');
+    sound.play('tile-placed');
+    expect(makeClip).toHaveBeenCalledTimes(placementSamples.length);
+    expect(clips[0]!.play).toHaveBeenCalledTimes(2);
+    expect(clips[1]!.play).toHaveBeenCalledTimes(2);
+    expect(clips[0]!.volume).toBeCloseTo(0.144);
+    expect(clips[0]!.playbackRate).toBeCloseTo(1.02);
+    sound.toggle();
+    expect(clips[0]!.pause).toHaveBeenCalledTimes(2);
+    expect(clips[0]!.currentTime).toBe(0);
+    sound.dispose();
+  });
+  it('keeps placement silent while muted and exposes unavailable media gracefully', async () => {
+    const mutedFactory = vi.fn((src: string) => ({
+      src,
+      volume: 1,
+      playbackRate: 1,
+      currentTime: 0,
+      muted: false,
+      play: vi.fn().mockRejectedValue(new Error('missing audio')),
+      pause: vi.fn(),
+    }));
+    const muted = new SoundService(undefined, undefined, mutedFactory);
+    muted.play('tile-placed');
+    expect(mutedFactory).not.toHaveBeenCalled();
+    muted.toggle();
+    muted.unlock();
+    muted.play('tile-placed');
+    await Promise.resolve();
+    expect(muted.getSnapshot().unavailable).toBe(true);
+    muted.dispose();
   });
   it('restores opt-in but requires a gesture to unlock each new page', () => {
     localStorage.setItem(soundKey, 'on');
@@ -132,5 +194,25 @@ describe('gesture-activated sound service', () => {
     match.public.phase = 'match-finished';
     expect(tracker.next(match)).toBe('match-result');
     expect(tracker.next({ ...match, revision: 9 })).toBeNull();
+  });
+  it('cues once for each bot or remote placement and stays silent on reconnect baselines', () => {
+    const tracker = new CueTracker();
+    const baseline = view(10);
+    tracker.next(baseline);
+    const remoteMove = structuredClone(baseline);
+    remoteMove.revision++;
+    remoteMove.public.turn = 1;
+    remoteMove.public.board = [{ tile: '1:2', left: 1, right: 2 }];
+    expect(tracker.next(remoteMove)).toBe('tile-placed');
+    expect(tracker.next(structuredClone(remoteMove))).toBeNull();
+    const botMove = structuredClone(remoteMove);
+    botMove.revision++;
+    botMove.public.turn = 2;
+    botMove.public.board.push({ tile: '2:3', left: 2, right: 3 });
+    expect(tracker.next(botMove)).toBe('tile-placed');
+
+    const reconnected = new CueTracker();
+    expect(reconnected.next(botMove)).toBeNull();
+    expect(reconnected.next(structuredClone(botMove))).toBeNull();
   });
 });

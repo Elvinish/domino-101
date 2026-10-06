@@ -256,10 +256,14 @@ reloading. English is the default. The selection is kept in localStorage under
 `domino101.language`, separate from private room sessions. Player names, tile
 values and room codes are never translated.
 
-Sound starts muted. Enable sound to opt into short synthesized cues for turns,
-tile placements and results. The preference is stored under `domino101.sound`;
-even with a saved opt-in, each new page waits for a user gesture before activating
-audio. These cues are separate from room voice; enabling sound does not enable the microphone.
+Sound starts muted. Enable sound to opt into short cues for turns and results and
+five recorded domino placements bundled at `apps/web/public/audio/domino/`. The
+preference is stored under `domino101.sound`; even with a saved opt-in, each new
+page waits for a user gesture before activating audio. Placement audio rotates
+across the short recorded clips with subtle level and rate variation. Missing or
+blocked files fail quietly and never affect play. Source provenance and the
+reproducible extraction recipe are in [audio asset details](docs/AUDIO_ASSETS.md).
+Sound is separate from room voice; enabling sound does not enable the microphone.
 
 Keyboard users can skip to the game, reach legal actions, choose an end and use
 Escape to cancel that choice. Turn/player/pending states include text and marks,

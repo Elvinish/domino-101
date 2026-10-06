@@ -31,21 +31,23 @@ that state as before.
 
 ## Sound
 
-`apps/web/src/sound/service.ts` owns Web Audio independently of React. It exposes
-semantic cues for your turn, a placed tile, a round result and a match result.
-Short sine tones use a low gain, last 80–250 ms, and need no downloads, external
-services, microphones or real audio hardware in tests.
+`apps/web/src/sound/service.ts` owns audio independently of React. Turn and result
+cues remain short Web Audio tones. Tile placements use five bundled recorded
+domino cues with subtle rate and level variation. Their source, extraction recipe,
+durations and hashes are in [`AUDIO_ASSETS.md`](AUDIO_ASSETS.md).
 
 Sound is muted by default. The explicit sound button persists `on` or `off` in
 `domino101.sound`. A saved opt-in never creates an AudioContext during startup:
-a click or key gesture inside the app unlocks audio for that page. Unsupported
-APIs or rejected resume requests produce a localized notice. Muting and unmounting
-stop and disconnect oscillators/gains and close the context.
+a click or key gesture inside the app unlocks audio for that page and primes the
+media elements used by later socket-driven placements. Unsupported APIs, missing
+files or rejected playback produce a localized notice. Muting and unmounting stop
+and clear sample playback, stop oscillator/gain nodes and close the context.
 
 `CueTracker` consumes only public game projections, own seat and revision. It
 ignores duplicate or old snapshots, makes initial/reconnect snapshots silent
 baselines, and chooses one cue per update. Match and round results take priority
-over turn and tile cues. Chat, language changes and unrelated renders never
+over turn and placement cues. A new tile takes priority over a turn-change cue.
+Chat, language changes and unrelated renders never
 replay sounds. No sound event mutates authoritative state.
 
 ## Accessibility and state clarity

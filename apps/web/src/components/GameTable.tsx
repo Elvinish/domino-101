@@ -95,6 +95,17 @@ export function GameTable({
         </p>
       )}
       <div className="table-shell">
+        <div className="table-atmosphere" aria-hidden="true">
+          <span className="table-arm table-arm--northwest" />
+          <span className="table-arm table-arm--northeast" />
+          <span className="table-arm table-arm--southwest" />
+          <span className="table-arm table-arm--southeast" />
+          <svg className="table-smoke" viewBox="0 0 64 112" focusable="false">
+            <path d="M33 108c-9-12 8-17 0-30-7-11 10-17 2-31" />
+            <path d="M19 109c-7-10 8-15 3-25-4-9 9-14 6-23" />
+            <path d="M47 108c-8-11 7-14 4-24-3-8 7-12 3-19" />
+          </svg>
+        </div>
         <Seats room={room} own={own} game={game} />
         <section className="board-zone" aria-label={t('game.table')}>
           <p className="eyebrow">BAKI · DOMINO 101</p>

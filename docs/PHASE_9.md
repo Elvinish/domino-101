@@ -212,8 +212,69 @@ short-lived credential rotation are not verified. Native-speaker review of RU/AZ
 strings and a full assistive-technology audit remain outside automated coverage.
 No deployment or production infrastructure verification was performed.
 
+## Recorded placement audio follow-up (2026-10-05)
+
+This follow-up replaces the tile-placement oscillator with rotating recorded-audio
+playback, primes its audio elements only after an explicit sound gesture, varies
+level by at most 10% and playback rate by at most 2%, and silences/clears playback
+when muted or disposed. Placement detection precedes the turn cue so one new board
+tile produces one placement cue even when it also changes whose turn it is. Tests
+cover mute, media-play rejection, variation bounds, bot/remote snapshot changes,
+duplicate revisions, reconnect baselines and browser cue counts through rerender,
+reload and new moves.
+
+At the time of this 2026-10-05 entry, recorded files were absent. The user has
+since supplied the source recording; the current asset status and extraction
+provenance are recorded in [`AUDIO_ASSETS.md`](AUDIO_ASSETS.md).
+
+Verification when this entry was written (2026-10-05):
+
+| Check                                               | Result                                                                                                                                    |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`                                 | Pass                                                                                                                                      |
+| `pnpm lint`                                         | Pass; zero warnings/errors                                                                                                                |
+| `pnpm typecheck`                                    | Pass; packages, apps, tools and E2E                                                                                                       |
+| `pnpm test` with loopback permission                | **565 passed, 17 skipped**, 45 files passed, 1 PostgreSQL file skipped                                                                    |
+| `pnpm test:socket` with loopback permission         | **55 passed**, 6 files passed                                                                                                             |
+| `pnpm test:postgres`                                | **Not run**; guard rejected missing `TEST_DATABASE_URL` ending in `_test`; no PostgreSQL client/server or Docker executable was available |
+| `pnpm build`                                        | Pass; web/server and migration runner compiled                                                                                            |
+| `pnpm test:e2e` with `DOMINO_E2E_SYNTHETIC_AUDIO=1` | **18 passed** across desktop/tablet/phone, including sound and voice scenarios                                                            |
+| `pnpm test:e2e` without capture shim                | Native Chromium microphone capture failed as documented above; rerun with the explicit test shim passed                                   |
+
+No migration was applied because there is no dedicated PostgreSQL test database.
+With missing sound files and database integration unavailable, this checkout is
+**not ready to deploy the recorded-placement-audio update**. The existing Phase 9
+voice implementation retains the prior staging limitations and requires the
+PostgreSQL, HTTPS/WSS, origin and ICE configuration documented above.
+
 Browser behavior references: [WebRTC specification](https://www.w3.org/TR/webrtc/),
 [secure-context microphone access](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia),
 [ICE candidate ordering](https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addIceCandidate),
 [playback promises](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/play)
 and [TURN guidance](https://webrtc.org/getting-started/turn-server).
+
+## Frontend polish and recorded samples (2026-10-06)
+
+The user-supplied Macif recording is retained as a private source master under
+`apps/web/audio-source/`, with five normalized 0.152–0.212 second PCM cues served
+from `apps/web/public/audio/domino/`. A Playwright HTTP asset test verifies every
+cue is served as short 44.1 kHz stereo 16-bit PCM with its expected peak range.
+The main board has a warm walnut table surface, understated perimeter player-arm
+illustrations, and a slow smoke accent. Decorative elements do not intercept
+input; the smoke respects reduced-motion settings. The existing chain renderer,
+game rules, authoritative services, and voice architecture are unchanged.
+
+The pre-existing PostgreSQL integration limitation and deployment requirements
+above remain. Browser audio asset validation verifies real shipped recordings and
+the web response, but does not replace listening checks on physical speakers.
+
+### Current frontend verification
+
+After the audio and visual changes, the full Vitest suite passed with **565
+passed, 17 skipped** across 46 files. Playwright passed **21 tests** on desktop,
+tablet and phone with `DOMINO_E2E_SYNTHETIC_AUDIO=1`; this includes HTTP checks of
+all five WAV cues and the existing game, reconnect, privacy, reduced-motion and
+voice scenarios. Formatting, lint, full workspace typecheck and production build
+passed. PostgreSQL integration remains blocked by the absent dedicated
+`TEST_DATABASE_URL` (the suite requires a database name ending in `_test`), so no
+database migration was applied or verified in this run.
