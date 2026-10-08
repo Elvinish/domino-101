@@ -1,5 +1,13 @@
 import type { Messages } from './en';
 export const az: Messages = {
+  'avatar.change': 'Avatarınızı dəyişin',
+  'avatar.local':
+    'Foto yalnız bu brauzerdə saxlanılır və digər oyunçulara göndərilmir.',
+  'avatar.upload': 'Foto seçin (PNG, JPEG, WebP · 5 MB-a qədər)',
+  'avatar.remove': 'Fotonu silin',
+  'avatar.loading': 'Foto hazırlanır…',
+  'avatar.error':
+    'Foto saxlanılmadı. 5 MB-dan kiçik PNG, JPEG və ya WebP seçin və brauzerdə məlumatların saxlanmasına icazə verin.',
   'bots.label': 'Bot',
   'bots.ready': 'Hazırdır',
   'bots.add': 'Bot əlavə et',

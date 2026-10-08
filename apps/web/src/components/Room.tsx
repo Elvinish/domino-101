@@ -6,6 +6,7 @@ import { Seats } from './Seats';
 import { GameTable } from './GameTable';
 import { ChatPanel } from './ChatPanel';
 import { VoicePanel } from './VoicePanel';
+import { TableScene } from './TableScene';
 
 export function Room({
   client,
@@ -19,7 +20,7 @@ export function Room({
   const { joined, room, game } = state;
   if (!joined || !room)
     return (
-      <main id="main-content" tabIndex={-1} className="room-page">
+      <main id="main-content" tabIndex={-1} className="room-page lounge-room">
         <p role="status">{t('room.preparing')}</p>
       </main>
     );
@@ -37,7 +38,7 @@ export function Room({
     }
   }
   return (
-    <main id="main-content" tabIndex={-1} className="room-page">
+    <main id="main-content" tabIndex={-1} className="room-page lounge-room">
       <div className="room-heading">
         <div>
           <p className="eyebrow">{t('room.private')}</p>
@@ -71,7 +72,7 @@ export function Room({
       {room.lifecycle === 'lobby' ? (
         <>
           <p className="lobby-intro">{t('room.invite')}</p>
-          <div className="table-shell lobby-table">
+          <TableScene room={room} own={joined}>
             <Seats
               room={room}
               own={joined}
@@ -100,7 +101,7 @@ export function Room({
                 <p>{t('room.hostStarts')}</p>
               )}
             </section>
-          </div>
+          </TableScene>
           {host &&
             !state.replaced &&
             room.seats.some((player) => player === null) && (

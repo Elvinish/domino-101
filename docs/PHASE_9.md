@@ -242,10 +242,10 @@ Verification when this entry was written (2026-10-05):
 | `pnpm test:e2e` without capture shim                | Native Chromium microphone capture failed as documented above; rerun with the explicit test shim passed                                   |
 
 No migration was applied because there is no dedicated PostgreSQL test database.
-With missing sound files and database integration unavailable, this checkout is
-**not ready to deploy the recorded-placement-audio update**. The existing Phase 9
-voice implementation retains the prior staging limitations and requires the
-PostgreSQL, HTTPS/WSS, origin and ICE configuration documented above.
+That historical run predates the supplied placement recordings and physical
+table scene. The current frontend assets and checks are documented below; the
+existing Phase 9 voice implementation retains the staging limitations and
+requires the PostgreSQL, HTTPS/WSS, origin and ICE configuration documented above.
 
 Browser behavior references: [WebRTC specification](https://www.w3.org/TR/webrtc/),
 [secure-context microphone access](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia),
@@ -259,18 +259,20 @@ The user-supplied Macif recording is retained as a private source master under
 `apps/web/audio-source/`, with five normalized 0.152–0.212 second PCM cues served
 from `apps/web/public/audio/domino/`. A Playwright HTTP asset test verifies every
 cue is served as short 44.1 kHz stereo 16-bit PCM with its expected peak range.
-The main board has a warm walnut table surface, understated perimeter player-arm
-illustrations, and a slow smoke accent. Decorative elements do not intercept
-input; the smoke respects reduced-motion settings. The existing chain renderer,
-game rules, authoritative services, and voice architecture are unchanged.
+The main board is now a physical lounge scene: a raised walnut frame with a
+recessed felt surface, four transparent forearm layers, seat-level active-turn
+presence, subtle furniture props and a slow smoke accent. Decorative elements do
+not intercept input; the smoke, hand motion and tile-settle animation respect
+reduced-motion settings. The existing chain renderer, game rules, authoritative
+services, and voice architecture are unchanged.
 
 The pre-existing PostgreSQL integration limitation and deployment requirements
 above remain. Browser audio asset validation verifies real shipped recordings and
 the web response, but does not replace listening checks on physical speakers.
 
-### Current frontend verification
+### Verification from 2026-10-06
 
-After the audio and visual changes, the full Vitest suite passed with **565
+After the audio and visual changes, the full Vitest suite passed with **568
 passed, 17 skipped** across 46 files. Playwright passed **21 tests** on desktop,
 tablet and phone with `DOMINO_E2E_SYNTHETIC_AUDIO=1`; this includes HTTP checks of
 all five WAV cues and the existing game, reconnect, privacy, reduced-motion and
@@ -278,3 +280,45 @@ voice scenarios. Formatting, lint, full workspace typecheck and production build
 passed. PostgreSQL integration remains blocked by the absent dedicated
 `TEST_DATABASE_URL` (the suite requires a database name ending in `_test`), so no
 database migration was applied or verified in this run.
+
+## Home table presentation (2026-10-07)
+
+The new reference supersedes the lounge/felt presentation above. The scene now
+uses one ordinary wooden tabletop, four pairs of natural hands, public-count
+opponent tile backs, an integrated selectable local hand, small avatar/seat
+badges, coffee and subtle steam. No gameplay, backend, persistence, bots,
+networking, voice or recorded-audio implementation was changed. See
+[HOME_TABLE.md](HOME_TABLE.md) for files, exact asset prompts, responsive behavior
+and the local-only avatar/profile adapter boundary.
+
+Desktop, tablet and phone screenshots were inspected against the new reference.
+The central table has no felt inset, the hands stay outside the central chain,
+and the own tiles are opaque, readable and selectable in their lower hand area.
+Photo decoration is omitted on phones; controls and avatars remain accessible.
+
+Formatting, lint, full workspace typecheck and production build passed. The
+avatar/control-focused Vitest run passed all **21 tests**. The full run with two
+workers produced **568 passed, 6 failed, 17 skipped**: all six failures were the
+existing 30-second limits on large bot seed batches, with no invariant assertion
+failure reported. The default-parallel run had additional timing failures;
+all non-simulation cases passed on the bounded rerun. Test timeout constants and
+bot code were not changed.
+
+The full Chromium Playwright run with `DOMINO_E2E_SYNTHETIC_AUDIO=1` produced
+**23 passed, 1 failed**. The sole failure was the 180-second desktop full-match
+budget (still playing round four). Avatar upload, actual 128×128 decoding,
+reload/removal, bot rounds, responsive chain geometry, keyboard, chat, audio,
+reconnect and voice cases passed, including the phone popup stacking fix.
+PostgreSQL's **17 tests remain skipped** without a dedicated `TEST_DATABASE_URL`;
+this frontend-only update does not apply migrations. Physical mobile browsers
+and hardware microphone/speaker behavior were not verified.
+
+Follow-up diagnostics: the unchanged large-seed file was also run alone with
+`--maxWorkers=1 --pool=threads`: **8 passed, 10 failed**, all ten failures being
+the 30-second seed-batch budget (814.70 seconds total). No bot invariant assertion
+failure was reported. The desktop full-match browser scenario was retried with
+`--timeout=600000`; it also failed on that timeout (16.3 minutes including
+teardown). It completed before the attempted diagnostic cancellation, so no
+test process was terminated. The full verification is therefore
+not green, despite passing frontend-focused checks. Neither these timing limits
+nor game/bot behavior was changed to conceal the failures.

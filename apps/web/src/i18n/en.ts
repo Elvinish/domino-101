@@ -1,4 +1,12 @@
 export const en = {
+  'avatar.change': 'Change your avatar',
+  'avatar.local':
+    'Your photo stays in this browser and is not shared with other players.',
+  'avatar.upload': 'Choose photo (PNG, JPEG, WebP · up to 5 MB)',
+  'avatar.remove': 'Remove photo',
+  'avatar.loading': 'Preparing photo…',
+  'avatar.error':
+    'Could not save this photo. Choose a PNG, JPEG or WebP under 5 MB and allow browser storage.',
   'bots.label': 'Bot',
   'bots.ready': 'Ready',
   'bots.add': 'Add bot',

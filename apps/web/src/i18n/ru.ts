@@ -1,5 +1,13 @@
 import type { Messages } from './en';
 export const ru: Messages = {
+  'avatar.change': 'Изменить свой аватар',
+  'avatar.local':
+    'Фото хранится только в этом браузере и не передаётся другим игрокам.',
+  'avatar.upload': 'Выбрать фото (PNG, JPEG, WebP · до 5 МБ)',
+  'avatar.remove': 'Удалить фото',
+  'avatar.loading': 'Подготовка фото…',
+  'avatar.error':
+    'Не удалось сохранить фото. Выберите PNG, JPEG или WebP до 5 МБ и разрешите хранение данных в браузере.',
   'bots.label': 'Бот',
   'bots.ready': 'Готов',
   'bots.add': 'Добавить бота',

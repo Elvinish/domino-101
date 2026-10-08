@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n';
+import { PlayerAvatar } from './PlayerAvatar';
 import type {
   BotAction,
   GameSnapshot,
@@ -11,10 +12,13 @@ export function Seats({
   own,
   game,
   botControls,
+  avatars,
 }: {
   room: RoomSnapshot;
   own: RoomJoined;
   game?: GameSnapshot | null;
+  /** Optional profile adapter; avatar data never belongs to game snapshots. */
+  avatars?: Readonly<Record<string, string>>;
   botControls?:
     | { disabled: boolean; onAction: (action: BotAction) => Promise<boolean> }
     | undefined;
@@ -42,9 +46,12 @@ export function Seats({
             aria-label={t('seat.label', { number: seat + 1, relation })}
             aria-current={active ? 'true' : undefined}
           >
-            <span className="avatar" aria-hidden="true">
-              {player?.displayName.slice(0, 1).toLocaleUpperCase() ?? '+'}
-            </span>
+            <PlayerAvatar
+              key={player?.playerId ?? seat}
+              name={player?.displayName ?? '+'}
+              imageUrl={player ? avatars?.[player.playerId] : undefined}
+              editable={relative === 0 && player?.playerId === own.playerId}
+            />
             <div className="seat-copy">
               <strong>
                 {player?.displayName ?? t('seat.open')}

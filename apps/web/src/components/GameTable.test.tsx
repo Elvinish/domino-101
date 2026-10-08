@@ -11,6 +11,60 @@ function setup(game = gameFixture(), disabled = false, pending = false) {
   return { ...view, onAction, props };
 }
 describe('authoritative table presentation and controls', () => {
+  it('integrates the own hand in the table and draws opponents only from public counts', () => {
+    const game = gameFixture();
+    game.public.handCounts = [7, 2, 0, 4];
+    const { container } = setup(game);
+    expect(container.querySelector('.physical-table .hand-panel')).toBeTruthy();
+    expect(
+      container.querySelectorAll('.scene-player--bottom .concealed-tile'),
+    ).toHaveLength(0);
+    expect(
+      container.querySelectorAll('.scene-player--left .concealed-tile'),
+    ).toHaveLength(2);
+    expect(
+      container.querySelectorAll('.scene-player--top .concealed-tile'),
+    ).toHaveLength(0);
+    expect(
+      container.querySelectorAll('.scene-player--right .concealed-tile'),
+    ).toHaveLength(4);
+    expect(container.querySelector('.scene-decoration')?.textContent).toBe('');
+    expect(container.querySelectorAll('.player-avatar')).toHaveLength(4);
+    expect(screen.getAllByLabelText('Change your avatar')).toHaveLength(1);
+  });
+  it('maps decorative hands to relative seats and only indicates a live public turn', () => {
+    const f = setup();
+    expect(f.container.querySelectorAll('.scene-hand')).toHaveLength(4);
+    expect(f.container.querySelector('.scene-decoration')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(f.container.querySelector('.scene-player.is-active')).toHaveClass(
+      'scene-player--bottom',
+    );
+    const game = {
+      ...f.props.game,
+      public: { ...f.props.game.public, turn: 1 as const },
+    };
+    f.rerender(<GameTable {...f.props} game={game} />);
+    expect(f.container.querySelector('.scene-player.is-active')).toHaveClass(
+      'scene-player--left',
+    );
+    f.rerender(
+      <GameTable
+        {...f.props}
+        game={game}
+        room={{ ...f.props.room, isPaused: true }}
+      />,
+    );
+    expect(f.container.querySelector('.scene-player.is-active')).toBeNull();
+    f.rerender(
+      <GameTable {...f.props} game={game} own={{ ...f.props.own, seat: 3 }} />,
+    );
+    expect(f.container.querySelector('.scene-player.is-active')).toHaveClass(
+      'scene-player--top',
+    );
+  });
   it('renders oriented board pips and doubles without inspecting hands', () => {
     const game = gameFixture();
     game.public.board = [
@@ -89,7 +143,11 @@ describe('authoritative table presentation and controls', () => {
   it('disables gameplay while a command is pending', () => {
     setup(gameFixture(), true, true);
     expect(screen.getByRole('button', { name: 'Play 1:1' })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Sending move…');
+    expect(
+      within(screen.getByRole('region', { name: 'Your hand' })).getByRole(
+        'status',
+      ),
+    ).toHaveTextContent('Sending move…');
     expect(screen.getByRole('region', { name: 'Your hand' })).toHaveAttribute(
       'aria-busy',
       'true',

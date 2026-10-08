@@ -10,6 +10,7 @@ import { Domino } from './Domino';
 import { DominoChain } from './DominoChain';
 import { Seats } from './Seats';
 import { tableStatus } from './tableStatus';
+import { TableScene } from './TableScene';
 
 interface Props {
   room: RoomSnapshot;
@@ -94,18 +95,7 @@ export function GameTable({
           {t('game.sekaBank', { points: state.score.sekaBank })}
         </p>
       )}
-      <div className="table-shell">
-        <div className="table-atmosphere" aria-hidden="true">
-          <span className="table-arm table-arm--northwest" />
-          <span className="table-arm table-arm--northeast" />
-          <span className="table-arm table-arm--southwest" />
-          <span className="table-arm table-arm--southeast" />
-          <svg className="table-smoke" viewBox="0 0 64 112" focusable="false">
-            <path d="M33 108c-9-12 8-17 0-30-7-11 10-17 2-31" />
-            <path d="M19 109c-7-10 8-15 3-25-4-9 9-14 6-23" />
-            <path d="M47 108c-8-11 7-14 4-24-3-8 7-12 3-19" />
-          </svg>
-        </div>
+      <TableScene room={room} own={own} game={game}>
         <Seats room={room} own={own} game={game} />
         <section className="board-zone" aria-label={t('game.table')}>
           <p className="eyebrow">BAKI · DOMINO 101</p>
@@ -116,9 +106,12 @@ export function GameTable({
               <span>{t('game.right', { value: state.openEnds.right })}</span>
             </div>
           )}
-          {state.board.length ? (
-            <DominoChain board={state.board} />
-          ) : (
+          <DominoChain
+            board={state.board}
+            motionScope={`${game.matchId}:${state.roundNumber}`}
+            motionEnabled={!room.isPaused}
+          />
+          {state.board.length === 0 && (
             <p className="empty-board">
               {state.phase === 'starter-selection'
                 ? t('game.emptySelection')
@@ -133,7 +126,114 @@ export function GameTable({
             </p>
           )}
         </section>
-      </div>
+        <section
+          aria-busy={pending}
+          className={`hand-panel ${pending ? 'pending-move' : ''}`}
+          aria-label={t('game.hand')}
+        >
+          <div className="hand-heading">
+            <h3>
+              {t('game.tiles')}
+              <span>{game.private.hand.length}</span>
+            </h3>
+            <span role="status">
+              {pending
+                ? t('game.sending')
+                : disabled
+                  ? t('game.unavailable')
+                  : state.turn === own.seat
+                    ? t('game.chooseTile')
+                    : state.phase === 'match-finished'
+                      ? t('game.matchComplete')
+                      : state.phase === 'round-ended'
+                        ? t('game.roundComplete')
+                        : state.phase === 'starter-selection'
+                          ? t('game.choosingStarter')
+                          : t('game.waitTurn')}
+            </span>
+          </div>
+          <div className="hand">
+            {game.private.hand.map((tile, index) => {
+              const moves = actions.filter(
+                (action) => action.type === 'play' && action.tile === tile,
+              );
+              const [left, right] = tile.split(':').map(Number);
+              return (
+                <button
+                  className={`hand-tile ${moves.length && !disabled ? 'playable' : ''}`}
+                  key={tile}
+                  style={{
+                    rotate: `${(index - (game.private.hand.length - 1) / 2) * 2}deg`,
+                  }}
+                  aria-label={t('game.playTile', { tile })}
+                  aria-describedby={`tile-state-${tile.replace(':', '-')}`}
+                  aria-pressed={chosen === tile}
+                  disabled={disabled || moves.length === 0}
+                  onClick={(event) => {
+                    selectedButton.current = event.currentTarget;
+                    if (moves.length === 1) play(moves[0]!);
+                    else setChoice({ tile, revision: game.revision });
+                  }}
+                >
+                  <Domino left={left!} right={right!} />
+                  <span className="tile-indicator" aria-hidden="true">
+                    {chosen === tile
+                      ? '✓'
+                      : !disabled && moves.length
+                        ? '•'
+                        : '−'}
+                  </span>
+                  <span
+                    className="sr-only"
+                    id={`tile-state-${tile.replace(':', '-')}`}
+                  >
+                    {t(
+                      pending
+                        ? 'game.sending'
+                        : chosen === tile
+                          ? 'game.tileSelected'
+                          : !disabled && moves.length
+                            ? 'game.tilePlayable'
+                            : 'game.tileUnavailable',
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {chosen && !disabled && (
+            <div
+              className="end-choice"
+              ref={choicePanel}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') cancelChoice();
+              }}
+              role="group"
+              aria-label={t('game.chooseEnd', { tile: chosen })}
+            >
+              <strong>{t('game.placeOn', { tile: chosen })}</strong>
+              {ends.map(
+                (action) =>
+                  action.type === 'play' && (
+                    <button key={action.end} onClick={() => play(action)}>
+                      {action.end === 'left'
+                        ? t('game.leftButton')
+                        : t('game.rightButton')}
+                    </button>
+                  ),
+              )}
+              <button className="quiet" onClick={cancelChoice}>
+                {t('game.cancel')}
+              </button>
+            </div>
+          )}
+          {actions.some((action) => action.type === 'pass') && (
+            <button disabled={disabled} onClick={() => play({ type: 'pass' })}>
+              {t('game.pass')}
+            </button>
+          )}
+        </section>
+      </TableScene>
       {state.phase === 'starter-selection' && (
         <section className="action-panel" aria-label={t('game.starterRegion')}>
           <h3>{t('game.whoStarts')}</h3>
@@ -209,110 +309,6 @@ export function GameTable({
           {state.winner && <p>{t('game.finishedHelp')}</p>}
         </section>
       )}
-      <section
-        aria-busy={pending}
-        className={`hand-panel ${pending ? 'pending-move' : ''}`}
-        aria-label={t('game.hand')}
-      >
-        <div className="hand-heading">
-          <h3>
-            {t('game.tiles')}
-            <span>{game.private.hand.length}</span>
-          </h3>
-          <span role="status">
-            {pending
-              ? t('game.sending')
-              : disabled
-                ? t('game.unavailable')
-                : state.turn === own.seat
-                  ? t('game.chooseTile')
-                  : state.phase === 'match-finished'
-                    ? t('game.matchComplete')
-                    : state.phase === 'round-ended'
-                      ? t('game.roundComplete')
-                      : state.phase === 'starter-selection'
-                        ? t('game.choosingStarter')
-                        : t('game.waitTurn')}
-          </span>
-        </div>
-        <div className="hand">
-          {game.private.hand.map((tile) => {
-            const moves = actions.filter(
-              (action) => action.type === 'play' && action.tile === tile,
-            );
-            const [left, right] = tile.split(':').map(Number);
-            return (
-              <button
-                className={`hand-tile ${moves.length && !disabled ? 'playable' : ''}`}
-                key={tile}
-                aria-label={t('game.playTile', { tile })}
-                aria-describedby={`tile-state-${tile.replace(':', '-')}`}
-                aria-pressed={chosen === tile}
-                disabled={disabled || moves.length === 0}
-                onClick={(event) => {
-                  selectedButton.current = event.currentTarget;
-                  if (moves.length === 1) play(moves[0]!);
-                  else setChoice({ tile, revision: game.revision });
-                }}
-              >
-                <Domino left={left!} right={right!} />
-                <span className="tile-indicator" aria-hidden="true">
-                  {chosen === tile
-                    ? '✓'
-                    : !disabled && moves.length
-                      ? '•'
-                      : '−'}
-                </span>
-                <span
-                  className="sr-only"
-                  id={`tile-state-${tile.replace(':', '-')}`}
-                >
-                  {t(
-                    pending
-                      ? 'game.sending'
-                      : chosen === tile
-                        ? 'game.tileSelected'
-                        : !disabled && moves.length
-                          ? 'game.tilePlayable'
-                          : 'game.tileUnavailable',
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {chosen && !disabled && (
-          <div
-            className="end-choice"
-            ref={choicePanel}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') cancelChoice();
-            }}
-            role="group"
-            aria-label={t('game.chooseEnd', { tile: chosen })}
-          >
-            <strong>{t('game.placeOn', { tile: chosen })}</strong>
-            {ends.map(
-              (action) =>
-                action.type === 'play' && (
-                  <button key={action.end} onClick={() => play(action)}>
-                    {action.end === 'left'
-                      ? t('game.leftButton')
-                      : t('game.rightButton')}
-                  </button>
-                ),
-            )}
-            <button className="quiet" onClick={cancelChoice}>
-              {t('game.cancel')}
-            </button>
-          </div>
-        )}
-        {actions.some((action) => action.type === 'pass') && (
-          <button disabled={disabled} onClick={() => play({ type: 'pass' })}>
-            {t('game.pass')}
-          </button>
-        )}
-      </section>
     </div>
   );
 }

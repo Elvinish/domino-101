@@ -9,6 +9,11 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
   let latest: GameSnapshot | null = null;
   const errors: string[] = [];
   let sessions = 0;
+  const handRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/images\/lounge\/hands?-.*\.png/.test(request.url()))
+      handRequests.push(request.url());
+  });
   page.on('pageerror', () => errors.push('Browser runtime error'));
   page.on('websocket', (socket) =>
     socket.on('framereceived', ({ payload }) => {
@@ -57,8 +62,45 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
   await page.getByRole('button', { name: 'Start match' }).click();
   await expect(page.getByRole('region', { name: 'Your hand' })).toBeVisible();
   await expect.poll(() => latest !== null).toBe(true);
+  await expect(page.locator('.scene-player.is-active')).toHaveCount(1);
+  await expect(page.locator('.scene-hand')).toHaveCount(4);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(
+    await page
+      .locator('.scene-player.is-active .scene-hand img')
+      .evaluate((element) => getComputedStyle(element).animationName),
+  ).toBe('none');
+  expect(
+    await page
+      .locator('.scene-smoke path')
+      .first()
+      .evaluate((element) => getComputedStyle(element).animationName),
+  ).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const richScene = (info.project.use.viewport?.width ?? 1440) > 640;
+  if (richScene) {
+    await expect
+      .poll(() =>
+        page
+          .locator('.scene-hand img')
+          .evaluateAll((images) =>
+            images.every(
+              (image) =>
+                (image as HTMLImageElement).complete &&
+                (image as HTMLImageElement).naturalWidth > 1,
+            ),
+          ),
+      )
+      .toBe(true);
+  } else {
+    expect(handRequests).toHaveLength(0);
+  }
   const initialRevision = snapshot().revision;
+  await page.locator('.lounge-scene').screenshot({
+    path: `test-results/${info.project.name}-home-opening.png`,
+  });
   let humanMoves = 0;
+  let capturedPlaying = false;
   for (let step = 0; step < 80; step++) {
     const game = snapshot();
     if (
@@ -70,6 +112,16 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
     const available = game.private.legalActions,
       action = available[0];
     if (action) {
+      if (
+        !capturedPlaying &&
+        game.public.board.length >= 6 &&
+        game.private.hand.length >= 2
+      ) {
+        await page.locator('.lounge-scene').screenshot({
+          path: `test-results/${info.project.name}-home-playing.png`,
+        });
+        capturedPlaying = true;
+      }
       await expect(page.locator('.game')).toHaveAttribute(
         'data-revision',
         String(game.revision),
@@ -109,6 +161,37 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
   expect(errors).toEqual([]);
   await noOverflow();
   await expectChainFits(page);
+  if (richScene) {
+    const decoration = await page
+      .locator('.physical-table')
+      .evaluate((table) => {
+        const board = table.querySelector('.board')!.getBoundingClientRect();
+        const hands = Array.from(table.querySelectorAll('.scene-hand'));
+        return {
+          nonInteractive: Array.from(
+            table.querySelectorAll(
+              '.scene-decoration, .scene-hand img, .scene-prop',
+            ),
+          ).every(
+            (element) => getComputedStyle(element).pointerEvents === 'none',
+          ),
+          outsideChain: hands.every((hand) => {
+            const box = hand.getBoundingClientRect();
+            return (
+              box.right <= board.left ||
+              box.left >= board.right ||
+              box.bottom <= board.top ||
+              box.top >= board.bottom
+            );
+          }),
+        };
+      });
+    expect(decoration.nonInteractive).toBe(true);
+    expect(decoration.outsideChain).toBe(true);
+  }
+  await page
+    .locator('.lounge-scene')
+    .screenshot({ path: `test-results/${info.project.name}-lounge-scene.png` });
   await page.screenshot({
     path: `test-results/${info.project.name}-bot-round.png`,
     fullPage: true,

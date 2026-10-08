@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<defs>
+<radialGradient id="china" cx=".3" cy=".25"><stop stop-color="#fff6da"/><stop offset=".65" stop-color="#c4b59a"/><stop offset=".9" stop-color="#7e6c53"/><stop offset="1" stop-color="#ebddbd"/></radialGradient>
+<radialGradient id="coffee" cx=".65" cy=".6"><stop stop-color="#150c06"/><stop offset=".7" stop-color="#2b1508"/><stop offset=".88" stop-color="#9b6632"/><stop offset="1" stop-color="#4f2b12"/></radialGradient>
+</defs>
+<ellipse cx="64" cy="68" rx="45" ry="41" fill="#090805" opacity=".65"/>
+<circle cx="56" cy="57" r="46" fill="#3a2e20" stroke="#a18c5c"/>
+<circle cx="55" cy="53" r="42" fill="url(#china)" stroke="#d9bf8a" stroke-width="2"/>
+<circle cx="55" cy="53" r="33" fill="none" stroke="#63513a" stroke-opacity=".2"/>
+<path d="M77 39c26-12 24 24 2 18" fill="none" stroke="#59452f" stroke-width="10"/>
+<path d="M76 36c26-12 24 24 2 18" fill="none" stroke="#dacbad" stroke-width="8"/>
+<circle cx="53" cy="47" r="28" fill="url(#china)"/>
+<circle cx="53" cy="47" r="23" fill="url(#coffee)" stroke="#f3e5c7" stroke-width="2"/>
+<path d="M38 32q15-7 26 0" fill="none" stroke="#fff2d2" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 78l22 12" stroke="#b4a285" stroke-width="4" stroke-linecap="round"/>
+</svg>

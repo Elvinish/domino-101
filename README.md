@@ -265,6 +265,16 @@ blocked files fail quietly and never affect play. Source provenance and the
 reproducible extraction recipe are in [audio asset details](docs/AUDIO_ASSETS.md).
 Sound is separate from room voice; enabling sound does not enable the microphone.
 
+The game scene uses a home wooden tabletop, four pairs of photographic hands,
+ivory tiles, coffee and quiet steam. Your selectable tiles sit inside the table
+scene; other hands display only tile backs derived from public counts. Small
+seat badges include avatars, names, teams and status. Clicking your avatar lets
+you choose or remove a photo saved **only in this browser**, without sending it
+to other players. A profile image adapter is available for future integration;
+there is no server upload or avatar synchronization. Phone layouts prioritize
+readable play and do not download the decorative hand images.
+See [home table implementation and asset prompts](docs/HOME_TABLE.md).
+
 Keyboard users can skip to the game, reach legal actions, choose an end and use
 Escape to cancel that choice. Turn/player/pending states include text and marks,
 with localized live announcements. Reduced motion preferences disable tile

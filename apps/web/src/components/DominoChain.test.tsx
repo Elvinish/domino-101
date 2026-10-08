@@ -15,6 +15,48 @@ for (let left = 0; left <= 6; left++)
       }),
     );
 afterEach(() => vi.unstubAllGlobals());
+it('settles only a single new placement, including the opening tile, without replaying baselines', () => {
+  const view = render(<DominoChain board={[]} motionScope="match:1" />);
+  expect(view.container.querySelector('.board')).toBeNull();
+  view.rerender(
+    <DominoChain board={board.slice(0, 1)} motionScope="match:1" />,
+  );
+  expect(view.container.querySelectorAll('.is-arriving')).toHaveLength(1);
+  view.rerender(
+    <DominoChain board={board.slice(0, 1)} motionScope="match:1" />,
+  );
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+  view.rerender(
+    <DominoChain board={board.slice(0, 4)} motionScope="match:1" />,
+  );
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+  view.rerender(
+    <DominoChain
+      board={[board[4]!, ...board.slice(0, 4)]}
+      motionScope="match:1"
+    />,
+  );
+  expect(view.container.querySelectorAll('.is-arriving')).toHaveLength(1);
+  expect(
+    view.container.querySelector('.is-arriving')?.closest('li'),
+  ).toHaveAttribute('data-tile', board[4]!.tile);
+  view.rerender(
+    <DominoChain board={board.slice(0, 6)} motionScope="match:2" />,
+  );
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+});
+it('keeps restored and paused boards still, resuming only after a fresh baseline', () => {
+  const view = render(<DominoChain board={board.slice(0, 4)} />);
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+  view.rerender(
+    <DominoChain board={board.slice(0, 5)} motionEnabled={false} />,
+  );
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+  view.rerender(<DominoChain board={board.slice(0, 6)} />);
+  expect(view.container.querySelector('.is-arriving')).toBeNull();
+  view.rerender(<DominoChain board={board.slice(0, 7)} />);
+  expect(view.container.querySelectorAll('.is-arriving')).toHaveLength(1);
+});
 it('responds to measured width, keeps logical tile order and disconnects the resize observer', () => {
   let notify!: ResizeObserverCallback;
   const disconnect = vi.fn(),
