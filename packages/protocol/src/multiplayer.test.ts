@@ -12,6 +12,12 @@ const id = '00000000-0000-4000-8000-000000000001';
 const roomId = 'a'.repeat(32);
 describe('strict multiplayer trust-boundary schemas', () => {
   it('normalizes names and accepts a valid join/share code', () => {
+    expect(
+      joinRoomSchema.parse({
+        roomId: ` ${roomId.toUpperCase()}\n`,
+        displayName: ' Guest ',
+      }),
+    ).toEqual({ roomId, displayName: 'Guest' });
     expect(createRoomSchema.parse({ displayName: '  Əli  ' })).toEqual({
       displayName: 'Əli',
     });

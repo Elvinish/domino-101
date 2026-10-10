@@ -34,15 +34,15 @@ it('offers host add/remove/fill and emits only validated seat actions with the c
   const f = setup();
   const add = within(
     screen.getByRole('region', { name: 'Seat 3, Partner' }),
-  ).getByRole('button', { name: 'Add bot' });
+  ).getByRole('button', { name: 'Add player' });
   for (const [button, action] of [
     [add, { type: 'add', seat: 2 }],
     [
-      screen.getByRole('button', { name: 'Remove bot' }),
+      screen.getByRole('button', { name: 'Remove player' }),
       { type: 'remove', seat: 1 },
     ],
     [
-      screen.getByRole('button', { name: 'Fill empty seats with bots' }),
+      screen.getByRole('button', { name: 'Fill empty seats' }),
       { type: 'fill' },
     ],
   ] as const) {
@@ -57,7 +57,7 @@ it('offers host add/remove/fill and emits only validated seat actions with the c
     );
     expect(button).toBeEnabled();
   }
-  expect(screen.getByText('Murad · Bot')).toBeVisible();
+  expect(screen.getByText('Murad', { selector: '.seat strong' })).toBeVisible();
   expect(screen.getByText('Ready', { exact: true })).toBeVisible();
   expect(
     screen.queryByText('Disconnected', { exact: true }),
@@ -66,7 +66,9 @@ it('offers host add/remove/fill and emits only validated seat actions with the c
 it('hides controls from non-hosts and also refuses programmatic non-host requests', async () => {
   const f = setup(false);
   expect(
-    screen.queryByRole('button', { name: /bot/i }),
+    screen.queryByRole('button', {
+      name: /(?:Add|Remove) player|Fill empty seats/,
+    }),
   ).not.toBeInTheDocument();
   expect(await f.client.manageBots({ type: 'fill' })).toBe(false);
   expect(f.socket.emit).not.toHaveBeenCalled();
@@ -82,7 +84,7 @@ it('starts with socketless bots, then hides lobby controls during play', () => {
   act(() => f.receive('room:snapshot', full));
   expect(screen.getByRole('button', { name: 'Start match' })).toBeEnabled();
   expect(
-    screen.queryByRole('button', { name: 'Fill empty seats with bots' }),
+    screen.queryByRole('button', { name: 'Fill empty seats' }),
   ).not.toBeInTheDocument();
   full.lifecycle = 'playing';
   full.revision = 7;
@@ -91,18 +93,20 @@ it('starts with socketless bots, then hides lobby controls during play', () => {
     f.receive('game:snapshot', { ...gameFixture(), revision: 7 });
   });
   expect(
-    screen.queryByRole('button', { name: /(?:Add|Remove) bot/ }),
+    screen.queryByRole('button', { name: /(?:Add|Remove) player/ }),
   ).not.toBeInTheDocument();
 });
 it('disables bot management while disconnected and hides it after socket replacement', () => {
   const f = setup();
   act(() => f.socket.disconnect());
   expect(
-    screen.getByRole('button', { name: 'Fill empty seats with bots' }),
+    screen.getByRole('button', { name: 'Fill empty seats' }),
   ).toBeDisabled();
   act(() => f.receive('room:replaced', {}));
   expect(
-    screen.queryByRole('button', { name: /bot/i }),
+    screen.queryByRole('button', {
+      name: /(?:Add|Remove) player|Fill empty seats/,
+    }),
   ).not.toBeInTheDocument();
 });
 it.each(['en', 'ru', 'az'] as const)(
@@ -120,7 +124,9 @@ it.each(['en', 'ru', 'az'] as const)(
     expect(
       screen.getByRole('button', { name: strings['bots.remove'] }),
     ).toBeVisible();
-    expect(screen.getByText(`Murad · ${strings['bots.label']}`)).toBeVisible();
+    expect(
+      screen.getByText('Murad', { selector: '.seat strong' }),
+    ).toBeVisible();
     expect(screen.getByText(strings['bots.ready'])).toBeVisible();
   },
 );

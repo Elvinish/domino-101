@@ -4,6 +4,7 @@ import {
   randomBytes,
   randomUUID,
 } from 'node:crypto';
+import { choosePersonaName } from './personas.js';
 import {
   createMatch,
   passTurn,
@@ -389,7 +390,11 @@ export class RoomService {
           next.seats[seat] = {
             kind: 'bot',
             playerId: randomUUID(),
-            displayName: `Domino ${seat + 1}`,
+            displayName: choosePersonaName(
+              next.seats.flatMap((player) =>
+                player ? [player.displayName] : [],
+              ),
+            ),
             seat,
             socketId: null,
             tokenHash: null,
@@ -642,6 +647,20 @@ export class RoomService {
       const seats: Room['seats'] = [null, null, null, null];
       for (const player of record.players)
         seats[player.seat] = playerFromPersisted(player);
+      // One-time upgrade of old generated placeholders, committed by restore below.
+      // Existing natural names and human-chosen names are never regenerated.
+      for (const player of seats) {
+        if (
+          player?.kind === 'bot' &&
+          /^Domino [1-4]$/u.test(player.displayName)
+        )
+          seats[player.seat] = {
+            ...player,
+            displayName: choosePersonaName(
+              seats.flatMap((entry) => (entry ? [entry.displayName] : [])),
+            ),
+          };
+      }
       const room: Room = {
         id: record.roomId,
         hostId: record.hostId,

@@ -187,8 +187,10 @@ describe.skipIf(!databaseUrl && !required)(
       expect(
         progressed.players
           .slice(1)
-          .map((p) => [p.playerId, p.kind, p.tokenHash]),
-      ).toEqual(bots.map((p) => [p.playerId, p.kind, p.tokenHash]));
+          .map((p) => [p.playerId, p.displayName, p.kind, p.tokenHash]),
+      ).toEqual(
+        bots.map((p) => [p.playerId, p.displayName, p.kind, p.tokenHash]),
+      );
       expect(progressed.players[3]!.commands).toHaveLength(1);
       expect(recovered.game!.public.board).toHaveLength(1);
       expect(
@@ -435,7 +437,7 @@ describe.skipIf(!databaseUrl && !required)(
         await sendSocial(outsider, CLIENT_EVENTS.chat, chatPayload),
       ).toMatchObject({ ok: false, error: { code: 'NOT_ROOM_MEMBER' } });
     }, 20000);
-    it.each(['starter-selection', 'match-finished'] as const)(
+    it.each(['round-ended', 'starter-selection', 'match-finished'] as const)(
       'restores nonzero scoring and %s across server instances',
       async (phase) => {
         let seed = 41;
@@ -455,6 +457,12 @@ describe.skipIf(!databaseUrl && !required)(
           await step(members);
         const snapshot = members[0]!.game!;
         expect(snapshot.public.phase).toBe(phase);
+        if (phase === 'starter-selection')
+          expect(snapshot.public).not.toHaveProperty('revealedHands');
+        else
+          expect(snapshot.public.revealedHands).toEqual(
+            members.map((member) => member.game!.private.hand),
+          );
         const score = snapshot.public.score;
         expect(
           score.sekaBank +

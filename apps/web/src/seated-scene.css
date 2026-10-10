@@ -1,0 +1,482 @@
+/* Match-only hand and control spacing. The original straight wooden table and
+   patterned floor come from table-scene.css, shared with the waiting room. */
+.seated-scene {
+  /* Decorative overflow must be cropped, never become a focus-scroll area. */
+  overflow: clip;
+}
+.seated-scene .table-shell.physical-table {
+  --side-seat-y: 50%;
+  padding: 234px 130px 12px;
+}
+
+/* The grips face their seats; forearms continue out through the scene crop. */
+.seated-scene .physical-table .seat {
+  border: 1px solid #eacda442;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #29251de8, #211c16e8);
+  box-shadow:
+    0 7px 14px #0a080750,
+    inset 0 1px #ffeece15;
+  padding: 10px 14px;
+  max-width: 240px;
+  text-align: left;
+}
+.seated-scene .physical-table .seat.active {
+  border-color: #efc982;
+  box-shadow:
+    0 6px 14px #0a080750,
+    inset 0 0 0 1px #f7d79750;
+}
+.seated-scene .physical-table .seat-top {
+  top: -98px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.seated-scene .physical-table .seat-left,
+.seated-scene .physical-table .seat-right {
+  top: calc(var(--side-seat-y) + 130px);
+  width: 184px;
+}
+.seated-scene .physical-table .seat-left {
+  left: -60px;
+}
+.seated-scene .physical-table .seat-right {
+  right: -60px;
+}
+.seated-scene .physical-table .seat-bottom {
+  bottom: -102px;
+}
+.seated-scene .scene-hand--top.holding-hand {
+  top: 65px;
+  transform: translateX(-50%);
+}
+.seated-scene .scene-hand--left.holding-hand {
+  left: 58px;
+  top: var(--side-seat-y);
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.seated-scene .scene-hand--right.holding-hand {
+  right: 58px;
+  top: var(--side-seat-y);
+  transform: translate(50%, -50%) rotate(-90deg);
+}
+.seated-scene .holding-hand .held-set {
+  --grip-width: 400px;
+  --grip-height: 400px;
+  --grip-inset: -160px;
+  --grip-top: -332px;
+}
+/* The fixed chest joins the movable photo halves. Only cloth overlaps; the
+   wrists and fingers still follow the real fan width without stretching skin. */
+.player-torso {
+  position: absolute;
+  top: var(--grip-top);
+  left: 50%;
+  width: var(--grip-width);
+  height: var(--grip-height);
+  transform: translateX(-50%);
+  clip-path: polygon(25% 0, 75% 0, 75% 55%, 70% 70%, 30% 70%, 25% 55%);
+  pointer-events: none;
+  user-select: none;
+}
+.seated-scene .holding-hand .player-torso {
+  width: var(--grip-width);
+  height: var(--grip-height);
+}
+.seated-scene .player-torso img {
+  width: 100%;
+  height: 100%;
+  filter: brightness(0.97) saturate(0.92);
+}
+.across-grip .grip-layer--back .grip-photo--left {
+  /* Blend only the shirt into the fixed torso. Fingers must stay opaque. */
+  mask-image:
+    linear-gradient(90deg, #000 40%, transparent 50%),
+    linear-gradient(180deg, transparent 68%, #000 74%);
+}
+.across-grip .grip-layer--back .grip-photo--right {
+  mask-image:
+    linear-gradient(270deg, #000 40%, transparent 50%),
+    linear-gradient(180deg, transparent 68%, #000 74%);
+}
+.across-grip:not(.is-empty) .grip-photo--right {
+  /* Both top photos place the right thumb farther from the image midpoint.
+     Align its contact with the fan, in both layers, without stretching skin. */
+  right: calc(var(--grip-width) * -0.37);
+}
+.holding-hand .across-grip.is-empty {
+  min-width: 56px;
+}
+.across-grip.is-empty .grip-layer {
+  visibility: visible;
+}
+.persona-badge {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 4px;
+  border: 1px solid #dfc39970;
+  border-radius: 4px;
+  color: #e5ccaa;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+@media (min-width: 641px) {
+  .lobby-table .scene-hand--top {
+    top: -250px;
+    left: calc(50% - 200px);
+    width: 400px;
+    height: 400px;
+    transform: none;
+  }
+}
+/* Local sleeves continue behind the cuff if end-choice controls make the scene
+   taller. Remote assets already include full sleeves; neither stretches skin. */
+@media (min-width: 641px) {
+  .seated-scene .local-grip .grip-layer--back .grip-photo::before {
+    content: '';
+    position: absolute;
+    width: 42%;
+    height: 480px;
+    top: calc(100% - 20px);
+    background:
+      repeating-linear-gradient(65deg, #ffffff03 0 1px, #00000006 1px 3px),
+      linear-gradient(90deg, #14171c, #242833 45%, #181b23);
+    transform: scaleY(-1);
+    pointer-events: none;
+  }
+  .seated-scene .local-grip .grip-layer--back .grip-photo--left::before {
+    left: -14%;
+    clip-path: polygon(0 0, 100% 0, 86% 100%, 33% 100%);
+  }
+  .seated-scene .local-grip .grip-layer--back .grip-photo--right::before {
+    right: -14%;
+    clip-path: polygon(0 0, 100% 0, 67% 100%, 14% 100%);
+  }
+  .seated-scene .local-grip .grip-layer--back .grip-photo--left {
+    clip-path: inset(0 50% -480px 0);
+  }
+  .seated-scene .local-grip .grip-layer--back .grip-photo--right {
+    clip-path: inset(0 0 -480px 50%);
+  }
+  .seated-scene .local-grip .grip-layer--back img {
+    mask-image: linear-gradient(0deg, transparent, #000 6%);
+  }
+}
+.seated-scene .across-grip .grip-layer--front .grip-photo--left {
+  /* Follow the top photograph's thumb crease; the other fingers stay behind
+     the tiles. Keep front/back coordinates identical to avoid a doubled grip. */
+  clip-path: polygon(
+    28% 75%,
+    34% 75%,
+    38% 79%,
+    42% 83%,
+    44.5% 85.5%,
+    44.5% 87%,
+    42% 88.2%,
+    39.5% 87.5%,
+    36% 86%,
+    33% 83%,
+    28% 81%
+  );
+}
+.seated-scene .across-grip .grip-layer--front .grip-photo--right {
+  clip-path: polygon(
+    72% 75%,
+    68% 75%,
+    64% 79%,
+    60% 83%,
+    58.5% 85.5%,
+    58.5% 87.5%,
+    60% 88.5%,
+    62.5% 88%,
+    65% 87%,
+    69% 84%,
+    72% 81%
+  );
+}
+.seated-scene
+  [data-persona-gender='female']
+  .across-grip
+  .grip-layer--front
+  .grip-photo--right {
+  /* This asset has a narrower thumb crease; exclude the index finger below. */
+  clip-path: polygon(
+    72% 75%,
+    68% 75%,
+    64% 79%,
+    60% 83%,
+    58.5% 85.5%,
+    58.5% 87%,
+    60% 87.7%,
+    62% 87.2%,
+    64% 86%,
+    67% 83.8%,
+    69% 81.5%,
+    72% 79%
+  );
+}
+/* Compact side grips use the original, naturally splayed forearms. Their
+   anchor follows the middle of the table and the associated seat, not the
+   viewport or a fixed distance from the top of a growing chain. */
+.seated-scene .holding-hand .side-grip {
+  --grip-width: 400px;
+  --grip-height: 266.667px;
+  --grip-inset: -160px;
+  --grip-top: -54px;
+}
+.seated-scene .side-grip .grip-layer--front .grip-photo--left {
+  clip-path: polygon(
+    18% 43%,
+    18% 32%,
+    29% 27%,
+    40% 27%,
+    44% 29%,
+    44% 34%,
+    37% 36%,
+    28% 43%
+  );
+}
+.seated-scene .side-grip .grip-layer--front .grip-photo--right {
+  clip-path: polygon(
+    82% 43%,
+    82% 32%,
+    71% 27%,
+    60% 27%,
+    56% 29%,
+    56% 34%,
+    63% 36%,
+    72% 43%
+  );
+}
+.seated-scene .holding-hand .concealed-tile {
+  background:
+    repeating-linear-gradient(45deg, #ffffff04 0 1px, transparent 1px 4px),
+    linear-gradient(115deg, #3f3730, #191815 75%, #4d453a);
+  border: 2px solid #e7d5ac;
+  border-top-width: 4px;
+  box-shadow:
+    inset 0 0 0 1px #6b5b43,
+    1px 3px 3px #1a0d0990;
+}
+
+/* Keep the chain clear of hands and badges; pips retain their original size. */
+.seated-scene .physical-table .board-zone {
+  z-index: 3;
+  min-height: 214px;
+  padding: 10px 0 20px;
+}
+.seated-scene .physical-table .board-zone .eyebrow {
+  color: #f1d8b5;
+}
+.seated-scene .physical-table .turn-label {
+  font-size: 26px;
+  text-shadow: 0 2px 6px #2f1a0e;
+}
+.seated-scene .physical-table .board {
+  margin-block: 24px;
+  isolation: isolate;
+}
+.seated-scene .physical-table .board .domino {
+  background: linear-gradient(
+    110deg,
+    #e4d7b9,
+    #fff9e4 35%,
+    #f7ebca 82%,
+    #dcca9f
+  );
+  border-color: #b59c70;
+  box-shadow:
+    inset 0 1px 1px #fffefa,
+    inset -1px -2px 1px #cfba8c,
+    0 3px 0 #9e835e,
+    2px 6px 4px #28150699;
+}
+.seated-scene .physical-table .pip.filled {
+  background: #22251f;
+}
+.lounge-room .seated-scene .physical-table .hand-panel {
+  min-height: 202px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.seated-scene .hand-heading {
+  padding-inline: 12px;
+  font-size: 12px;
+}
+.seated-scene .local-grip {
+  --grip-width: 600px;
+  --grip-height: 400px;
+  --grip-inset: -240px;
+  --grip-top: -30px;
+  filter: drop-shadow(0 5px 3px #1c100a55);
+}
+.seated-scene .local-grip .hand-tile .domino {
+  box-shadow:
+    inset 0 1px 1px #fffefa,
+    inset 0 -2px #d7c398,
+    1px 3px 0 #9d855e,
+    1px 5px 3px #24180da0;
+}
+
+/* Small objects occupy edge pockets; nothing drifts across the playable center. */
+.seated-scene .table-decor-seat--top {
+  top: 18px;
+  left: auto;
+  right: 23%;
+}
+.seated-scene .table-decor-seat--left {
+  top: 110px;
+  left: 1%;
+  bottom: auto;
+  flex-direction: row;
+}
+.seated-scene .table-decor-seat--right {
+  top: 110px;
+  right: 1%;
+  bottom: auto;
+  flex-direction: row;
+}
+.seated-scene .table-decor-seat--bottom {
+  bottom: 12px;
+  right: 6%;
+}
+.seated-scene .table-prop {
+  width: 74px;
+  height: 74px;
+}
+
+@media (min-width: 641px) and (max-width: 1100px) {
+  .lobby-table .scene-hand--top {
+    top: -200px;
+    left: calc(50% - 170px);
+    width: 340px;
+    height: 340px;
+  }
+  .seated-scene .table-shell.physical-table {
+    padding: 268px 42px 16px;
+  }
+  .seated-scene .physical-table .seat {
+    padding: 7px 9px;
+    max-width: 180px;
+  }
+  .seated-scene .physical-table .seat-top {
+    top: -88px;
+  }
+  .seated-scene .physical-table .seat-left,
+  .seated-scene .physical-table .seat-right {
+    top: calc(var(--side-seat-y) + 115px);
+    width: 144px;
+    flex-direction: row;
+  }
+  .seated-scene .physical-table .seat-left {
+    left: -30px;
+  }
+  .seated-scene .physical-table .seat-right {
+    right: -30px;
+  }
+  .seated-scene .physical-table .seat-bottom {
+    bottom: -98px;
+  }
+  .seated-scene .scene-hand--top.holding-hand {
+    top: 55px;
+  }
+  .seated-scene .scene-hand--left.holding-hand {
+    left: 34px;
+  }
+  .seated-scene .scene-hand--right.holding-hand {
+    right: 34px;
+  }
+  .seated-scene .holding-hand .held-set {
+    --grip-width: 340px;
+    --grip-height: 340px;
+    --grip-inset: -136px;
+    --grip-top: -282px;
+  }
+  .seated-scene .holding-hand .side-grip {
+    --grip-width: 320px;
+    --grip-height: 213.333px;
+    --grip-inset: -128px;
+    --grip-top: -42px;
+  }
+  .seated-scene .physical-table .board-zone {
+    margin-inline: 80px;
+  }
+  .seated-scene .table-prop {
+    width: 45px;
+    height: 45px;
+  }
+  .seated-scene .table-decor-seat--top {
+    /* Keep the narrow table's top seat clear; this pocket sits beneath its card. */
+    display: none;
+  }
+  .seated-scene .table-decor-seat--left {
+    top: auto;
+    left: 0;
+    bottom: 115px;
+    flex-direction: column;
+  }
+  .seated-scene .table-decor-seat--right {
+    top: auto;
+    right: 0;
+    bottom: 115px;
+    flex-direction: column;
+  }
+  .seated-scene .table-decor-seat--bottom {
+    display: none;
+  }
+  .seated-scene .table-decor-seat .table-prop:nth-child(n + 2) {
+    display: none;
+  }
+  .lounge-room .seated-scene .physical-table .hand-panel {
+    min-height: 200px;
+  }
+  .seated-scene .hand-heading {
+    padding-inline: 100px;
+  }
+}
+@media (max-width: 640px) {
+  .player-torso {
+    display: none;
+  }
+  .seated-scene {
+    padding: 16px 0 32px;
+    border-radius: 18px;
+    background: transparent;
+  }
+  .seated-scene .table-shell.physical-table {
+    padding: 16px 10px;
+  }
+  .seated-scene .physical-table .seat {
+    max-width: 100%;
+    padding: 7px;
+    border-radius: 12px;
+  }
+  .seated-scene .physical-table .seat-top,
+  .seated-scene .physical-table .seat-bottom,
+  .seated-scene .physical-table .seat-left,
+  .seated-scene .physical-table .seat-right {
+    position: static;
+    width: auto;
+    transform: none;
+  }
+  .seated-scene .physical-table .board-zone {
+    min-height: 190px;
+    padding: 12px 0;
+  }
+  .seated-scene .physical-table .turn-label {
+    font-size: 21px;
+  }
+  .seated-scene .physical-table .board {
+    margin-block: 14px;
+  }
+  .lounge-room .seated-scene .physical-table .hand-panel {
+    min-height: auto;
+    margin: 0;
+    padding: 18px 0;
+  }
+  .seated-scene .hand-heading {
+    padding: 0;
+  }
+}

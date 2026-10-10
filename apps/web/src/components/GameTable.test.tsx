@@ -11,6 +11,80 @@ function setup(game = gameFixture(), disabled = false, pending = false) {
   return { ...view, onAction, props };
 }
 describe('authoritative table presentation and controls', () => {
+  it.each(['round-ended', 'match-finished'] as const)(
+    'reveals exact seat hands only in %s, then hides them for a new round',
+    (phase) => {
+      const game = gameFixture();
+      game.public.phase = phase;
+      game.public.handCounts = [7, 2, 0, 1];
+      game.public.revealedHands = [
+        game.private.hand,
+        ['0:1', '2:2'],
+        [],
+        ['6:6'],
+      ];
+      const f = setup(game);
+      expect(
+        Array.from(
+          f.container.querySelectorAll('.scene-player--left .revealed-tile'),
+        ).map((tile) => tile.getAttribute('aria-label')),
+      ).toEqual(['0:1', '2:2']);
+      expect(
+        f.container.querySelectorAll('.scene-player--top .revealed-tile'),
+      ).toHaveLength(0);
+      expect(
+        f.container.querySelector('.scene-player--right .revealed-tile'),
+      ).toHaveAttribute('aria-label', '6:6');
+      expect(
+        f.container.querySelectorAll('.remote-grip .concealed-tile'),
+      ).toHaveLength(0);
+      expect(
+        f.container.querySelectorAll('.seat-reveal .revealed-tile'),
+      ).toHaveLength(3);
+      // Even a malformed active snapshot must not reveal through the view helper.
+      f.rerender(
+        <GameTable
+          {...f.props}
+          game={{ ...game, public: { ...game.public, phase: 'playing' } }}
+        />,
+      );
+      expect(f.container.querySelectorAll('.revealed-tile')).toHaveLength(0);
+      expect(
+        f.container.querySelectorAll('.remote-grip .concealed-tile'),
+      ).toHaveLength(3);
+    },
+  );
+  it('keeps the grip attached to its tile row as hands shrink, without inventing hidden faces', () => {
+    const game = gameFixture();
+    const f = setup(game);
+    for (const count of [7, 1, 0]) {
+      const next = {
+        ...game,
+        private: { ...game.private, hand: game.private.hand.slice(0, count) },
+        public: {
+          ...game.public,
+          handCounts: [count, count, count, count] as [
+            number,
+            number,
+            number,
+            number,
+          ],
+        },
+      };
+      f.rerender(<GameTable {...f.props} game={next} />);
+      const local = f.container.querySelector('.local-grip')!;
+      expect(local.querySelectorAll('.hand-tile')).toHaveLength(count);
+      expect(local.classList.contains('is-empty')).toBe(count === 0);
+      for (const remote of f.container.querySelectorAll('.remote-grip')) {
+        expect(remote.querySelectorAll('.concealed-tile')).toHaveLength(count);
+        expect(remote.querySelectorAll('.pips, .hand-tile')).toHaveLength(0);
+        expect(remote.classList.contains('is-empty')).toBe(count === 0);
+      }
+      for (const layer of f.container.querySelectorAll('.grip-layer')) {
+        expect(layer).toHaveAttribute('aria-hidden', 'true');
+      }
+    }
+  });
   it('integrates the own hand in the table and draws opponents only from public counts', () => {
     const game = gameFixture();
     game.public.handCounts = [7, 2, 0, 4];
@@ -34,7 +108,8 @@ describe('authoritative table presentation and controls', () => {
   });
   it('maps decorative hands to relative seats and only indicates a live public turn', () => {
     const f = setup();
-    expect(f.container.querySelectorAll('.scene-hand')).toHaveLength(4);
+    expect(f.container.querySelectorAll('.remote-grip')).toHaveLength(3);
+    expect(f.container.querySelectorAll('.local-grip')).toHaveLength(1);
     expect(f.container.querySelector('.scene-decoration')).toHaveAttribute(
       'aria-hidden',
       'true',
@@ -58,6 +133,7 @@ describe('authoritative table presentation and controls', () => {
       />,
     );
     expect(f.container.querySelector('.scene-player.is-active')).toBeNull();
+    expect(f.container.querySelector('.held-set.is-active')).toBeNull();
     f.rerender(
       <GameTable {...f.props} game={game} own={{ ...f.props.own, seat: 3 }} />,
     );
@@ -157,9 +233,7 @@ describe('authoritative table presentation and controls', () => {
     const game = gameFixture();
     game.private.legalActions = [{ type: 'pass' }];
     const f = setup(game);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Pass — no playable tiles' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
     expect(f.onAction).toHaveBeenCalledWith({ type: 'pass' });
   });
   it('does not invent pass when no actions are available', () => {

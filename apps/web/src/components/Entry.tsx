@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { roomIdSchema } from '@domino/protocol';
+import { roomCodeSchema } from '@domino/protocol';
 import type { ClientState, MultiplayerClient } from '../multiplayer/client';
 import { Domino } from './Domino';
 
@@ -19,7 +19,7 @@ export function Entry({
   const [code, setCode] = useState('');
   const navigate = useNavigate();
   const validRoute =
-    roomId === undefined || roomIdSchema.safeParse(roomId).success;
+    roomId === undefined || roomCodeSchema.safeParse(roomId).success;
   const disabled = state.status !== 'connected' || state.pending;
   async function enter(mode: 'create' | 'join') {
     const ok =
@@ -58,7 +58,7 @@ export function Entry({
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void enter(roomId ? 'join' : 'create');
+              void enter(roomId || code.trim() ? 'join' : 'create');
             }}
           >
             <label htmlFor="display-name">{t('entry.name')}</label>
@@ -74,13 +74,23 @@ export function Entry({
             {roomId ? (
               <>
                 <p className="muted">{t('entry.friend')}</p>
-                <button className="primary" type="submit" disabled={disabled}>
+                <button
+                  className="primary"
+                  type="submit"
+                  value="join"
+                  disabled={disabled}
+                >
                   {state.pending ? t('entry.joining') : t('entry.join')}
                 </button>
               </>
             ) : (
               <>
-                <button className="primary" type="submit" disabled={disabled}>
+                <button
+                  className="primary"
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => void enter('create')}
+                >
                   {state.pending ? t('entry.wait') : t('entry.create')}
                 </button>
                 <div className="or">
@@ -91,16 +101,21 @@ export function Entry({
                   id="room-code"
                   value={code}
                   onChange={(event) => setCode(event.target.value)}
-                  maxLength={32}
+                  maxLength={128}
                   autoCapitalize="none"
                   spellCheck={false}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      void enter('join');
+                    }
+                  }}
                   placeholder={t('entry.codeHint')}
                 />
                 <button
-                  type="button"
+                  type="submit"
                   className="secondary"
                   disabled={disabled || !name.trim() || !code.trim()}
-                  onClick={() => void enter('join')}
                 >
                   {t('entry.join')}
                 </button>

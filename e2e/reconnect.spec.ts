@@ -117,9 +117,20 @@ test('hard refresh restores the exact seat and hand; replacement tab revokes old
         .poll(() => player.received.game!.revision)
         .toBe(revision + 1);
 
-    // Same-origin localStorage is available to a second tab in this browser context.
+    // A fresh tab must not inherit a seat. Explicit credential transfer below
+    // exercises the server's stale-socket protection, not normal invitation flow.
     const replacement = observe(await contexts[actorIndex]!.newPage());
     await replacement.page.goto(url);
+    await expect(
+      replacement.page.getByLabel('Your display name'),
+    ).toBeVisible();
+    await replacement.page.evaluate((session) => {
+      sessionStorage.setItem(
+        `domino101.session.${session.roomId}`,
+        JSON.stringify(session),
+      );
+    }, actor.received.session!);
+    await replacement.page.reload();
     await expect(
       replacement.page.getByRole('region', { name: 'Your hand' }),
     ).toBeVisible();
@@ -199,7 +210,7 @@ test('hard refresh restores the exact seat and hand; replacement tab revokes old
     expect(
       await replacement.page.evaluate(
         (roomId) =>
-          localStorage.getItem(`domino101.session.${roomId}`) === null,
+          sessionStorage.getItem(`domino101.session.${roomId}`) === null,
         assigned.roomId,
       ),
     ).toBe(true);

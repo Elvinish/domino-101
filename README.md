@@ -5,6 +5,16 @@ Azerbaijani-style Domino “101”: four guests, two opposing teams, private roo
 
 ## Requirements and quick start
 
+Completed rounds now reveal each player's actual remaining tiles, only after the
+server confirms the result. Automated seats receive persistent human names from
+a pool of 340 names, unique within the room. See
+[round reveal and player personas](docs/REVEAL_PERSONAS.md) for privacy,
+restoration and verification details.
+
+Bot personas now include explicit gender metadata and a small AI badge. Matching
+hand assets and a connected torso for the upper seat keep the home-table scene
+coherent. See [visual personas and asset mapping](docs/BOT_VISUAL_PERSONAS.md).
+
 - Node.js 24 LTS (see `.node-version` / `.nvmrc`).
 - pnpm 10.34.5, pinned in `package.json`. Install with `npm install -g pnpm@10.34.5`, or use your package-manager version manager.
 
@@ -188,7 +198,7 @@ configuration. Browser tests are separate from `pnpm verify`.
 
 ## Saved seats and reconnect
 
-The browser stores a private per-room reconnect credential in localStorage. It is
+The browser stores a private per-room reconnect credential in sessionStorage. It is
 never shown in the UI or invite URL. Reloading `/room/:roomId` restores the same
 player, seat, hand and match when the session is valid. Temporary transport loss
 attempts recovery automatically; Retry connection is available if needed. Opening
@@ -265,15 +275,21 @@ blocked files fail quietly and never affect play. Source provenance and the
 reproducible extraction recipe are in [audio asset details](docs/AUDIO_ASSETS.md).
 Sound is separate from room voice; enabling sound does not enable the microphone.
 
-The game scene uses a home wooden tabletop, four pairs of photographic hands,
-ivory tiles, coffee and quiet steam. Your selectable tiles sit inside the table
-scene; other hands display only tile backs derived from public counts. Small
-seat badges include avatars, names, teams and status. Clicking your avatar lets
+The game scene uses a straight, nearly overhead home wooden tabletop, four pairs of
+photographic hands, ivory tiles, SVG tabletop props and quiet steam. Your
+selectable tiles sit inside the table scene; other hands display only tile backs
+derived from public counts. Small seat badges include avatars, names, teams and
+status. Clicking your avatar lets
 you choose or remove a photo saved **only in this browser**, without sending it
 to other players. A profile image adapter is available for future integration;
 there is no server upload or avatar synchronization. Phone layouts prioritize
 readable play and do not download the decorative hand images.
 See [home table implementation and asset prompts](docs/HOME_TABLE.md).
+
+The tabletop props are selected deterministically per room, match and round.
+The 61-item pool and 18 curated combinations are documented in
+[Dynamic tabletop decoration](docs/TABLE_DECOR.md); the layer is decorative,
+non-interactive and hidden on phone layouts.
 
 Keyboard users can skip to the game, reach legal actions, choose an end and use
 Escape to cancel that choice. Turn/player/pending states include text and marks,

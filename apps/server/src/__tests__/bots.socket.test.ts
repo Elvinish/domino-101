@@ -72,6 +72,7 @@ it('supports real host add/remove/fill and one-human gameplay without bot socket
       expect(roomSnapshotSchema.safeParse(event.payload).success).toBe(true);
     if (event.event === 'game:snapshot') {
       const game = gameSnapshotSchema.parse(event.payload);
+      expect(game.public).not.toHaveProperty('revealedHands');
       expect(game.playerId).toBe(f.host.joined!.playerId);
       expect(game.private.hand).toEqual(
         record.matchState!.phase === 'starter-selection'
@@ -136,6 +137,9 @@ it('reserves current socket ownership for bot management after replacement and r
   await f.manage({ type: 'fill' });
   const replacement = await f.h.connect();
   await send(replacement, CLIENT_EVENTS.reconnect, f.host.session!);
+  expect(replacement.room!.seats.map((p) => p?.displayName)).toEqual(
+    f.host.room!.seats.map((p) => p?.displayName),
+  );
   expect(await f.manage({ type: 'remove', seat: 1 })).toMatchObject({
     ok: false,
     error: { code: 'NOT_ROOM_MEMBER' },

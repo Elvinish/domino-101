@@ -5,6 +5,7 @@ import { App } from './app/App';
 import { parseWebEnv } from './config/env';
 import './styles.css';
 import './table-scene.css';
+import './seated-scene.css';
 
 parseWebEnv(import.meta.env);
 const root = document.getElementById('root');

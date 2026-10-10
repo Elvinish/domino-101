@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { avatarStorageKey, prepareAvatar, readAvatar } from '../avatar';
 import { useI18n } from '../i18n';
 
@@ -20,6 +20,42 @@ export function PlayerAvatar({
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
+  const popup = useRef<HTMLDetailsElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const close = useCallback((restoreFocus = false) => {
+    generation.current++;
+    setBusy(false);
+    setError(false);
+    if (input.current) input.current.value = '';
+    if (popup.current) {
+      popup.current.open = false;
+      if (restoreFocus)
+        popup.current.querySelector('summary')?.focus({ preventScroll: true });
+    }
+  }, []);
+  useEffect(() => {
+    if (!editable) return;
+    const outside = (event: PointerEvent) => {
+      if (
+        popup.current?.open &&
+        event.target instanceof Node &&
+        !popup.current.contains(event.target)
+      )
+        close();
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (popup.current?.open && event.key === 'Escape') {
+        event.preventDefault();
+        close(true);
+      }
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [editable, close]);
   useEffect(
     () => () => {
       generation.current++;
@@ -47,6 +83,7 @@ export function PlayerAvatar({
       localStorage.setItem(avatarStorageKey, value);
       setLocalImage(value);
       setFailedImage(undefined);
+      close(true);
     } catch {
       if (current === generation.current) setError(true);
     } finally {
@@ -61,8 +98,23 @@ export function PlayerAvatar({
       </span>
     );
   return (
-    <details className="avatar-settings">
-      <summary className="player-avatar" aria-label={t('avatar.change')}>
+    <details
+      className="avatar-settings"
+      ref={popup}
+      onToggle={() => {
+        if (!popup.current?.open) close();
+      }}
+    >
+      <summary
+        className="player-avatar"
+        aria-label={t('avatar.change')}
+        onClick={(event) => {
+          if (popup.current?.open) {
+            event.preventDefault();
+            close(true);
+          }
+        }}
+      >
         {face}
       </summary>
       <div className="avatar-popover">
@@ -70,6 +122,7 @@ export function PlayerAvatar({
         <label>
           {t('avatar.upload')}
           <input
+            ref={input}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             disabled={busy}
@@ -89,7 +142,7 @@ export function PlayerAvatar({
               try {
                 localStorage.removeItem(avatarStorageKey);
                 setLocalImage(undefined);
-                setError(false);
+                close(true);
               } catch {
                 setError(true);
               }
@@ -98,6 +151,9 @@ export function PlayerAvatar({
             {t('avatar.remove')}
           </button>
         )}
+        <button type="button" className="quiet" onClick={() => close(true)}>
+          {t('game.cancel')}
+        </button>
         <span role="status">
           {error ? t('avatar.error') : busy ? t('avatar.loading') : ''}
         </span>

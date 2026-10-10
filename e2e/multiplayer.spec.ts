@@ -221,7 +221,7 @@ test('four friends create, join, play and keep private hands isolated', async ({
         }
       } else if (action.type === 'pass')
         await actor.page
-          .getByRole('button', { name: 'Pass — no playable tiles' })
+          .getByRole('button', { name: 'Pass', exact: true })
           .click();
       else if (action.type === 'next-round')
         await actor.page

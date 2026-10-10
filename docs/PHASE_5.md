@@ -90,7 +90,7 @@ if someone deliberately leaves an active match. All-offline room expiry still ap
 ## Browser storage and refresh
 
 `apps/web/src/multiplayer/session.ts` stores exactly the three-field private session
-in `localStorage` under `domino101.session.<roomId>`. No hand, score, socket ID or full
+in per-tab `sessionStorage` under `domino101.session.<roomId>`. No hand, score, socket ID or full
 snapshot is stored. Per-room keys avoid using one room's credential in another.
 Storage reads are validated; denied/corrupt storage fails safely without logging.
 If a write is denied, a visible notice explains that in-tab recovery works but a

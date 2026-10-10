@@ -1,5 +1,7 @@
 import { useI18n } from '../i18n';
 import { PlayerAvatar } from './PlayerAvatar';
+import { RevealedTiles } from './RevealedTiles';
+import { revealedHand } from '../reveal';
 import type {
   BotAction,
   GameSnapshot,
@@ -29,6 +31,7 @@ export function Seats({
     <div className="seats" aria-label={t('seat.group')}>
       {room.seats.map((player, seat) => {
         const relative = (seat - own.seat + 4) % 4;
+        const revealed = relative !== 0 ? revealedHand(game, seat) : undefined;
         const relation =
           relative === 0
             ? t('seat.you')
@@ -55,7 +58,14 @@ export function Seats({
             <div className="seat-copy">
               <strong>
                 {player?.displayName ?? t('seat.open')}
-                {player?.kind === 'bot' ? ` · ${t('bots.label')}` : ''}
+                {player?.kind === 'bot' && (
+                  <small
+                    className="persona-badge"
+                    aria-label={t('bots.automated')}
+                  >
+                    AI
+                  </small>
+                )}
               </strong>
               <span>
                 {relation} ·{' '}
@@ -98,6 +108,14 @@ export function Seats({
                 <span className="hand-count">
                   {t('seat.tiles', { count: game.public.handCounts[seat]! })}
                 </span>
+              )}
+              {!!revealed?.length && (
+                <>
+                  <span className="sr-only">{revealed.join(', ')}</span>
+                  <div className="seat-reveal" aria-hidden="true">
+                    <RevealedTiles hand={revealed} />
+                  </div>
+                </>
               )}
             </div>
           </section>

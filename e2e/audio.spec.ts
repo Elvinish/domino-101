@@ -73,9 +73,7 @@ async function passUntilPlayable(
       game.private.legalActions.some((candidate) => candidate.type === 'pass')
     ) {
       const revision = game.revision;
-      await page
-        .getByRole('button', { name: 'Pass — no playable tiles' })
-        .click();
+      await page.getByRole('button', { name: 'Pass', exact: true }).click();
       await expect
         .poll(() => (snapshot()?.revision ?? revision) > revision)
         .toBe(true);
@@ -120,9 +118,7 @@ test('placement sound observes new bot and human moves once and reconnect stays 
   await page.getByLabel('Your display name').fill('Sound test');
   await page.getByRole('button', { name: 'Enable sound' }).click();
   await page.getByRole('button', { name: 'Create a private room' }).click();
-  await page
-    .getByRole('button', { name: 'Fill empty seats with bots' })
-    .click();
+  await page.getByRole('button', { name: 'Fill empty seats' }).click();
   await page.getByRole('button', { name: 'Start match' }).click();
   await expect(page.getByRole('region', { name: 'Your hand' })).toBeVisible();
   await expect.poll(() => latest !== null).toBe(true);

@@ -60,6 +60,24 @@ describe('entry and room routes', () => {
       { roomId, displayName: 'Guest' },
     ]);
   });
+  it('Enter in the code field joins rather than creating a different room', () => {
+    const f = setup();
+    fireEvent.change(screen.getByLabelText('Your display name'), {
+      target: { value: 'Guest' },
+    });
+    const code = screen.getByLabelText('Room code');
+    fireEvent.change(code, {
+      target: { value: `  ${roomId.toUpperCase()}  ` },
+    });
+    fireEvent.keyDown(code, { key: 'Enter' });
+    expect(f.socket.emit.mock.calls[0]?.slice(0, 2)).toEqual([
+      'room:join',
+      { roomId, displayName: 'Guest' },
+    ]);
+    expect(
+      f.socket.emit.mock.calls.some(([event]) => event === 'room:create'),
+    ).toBe(false);
+  });
   it('shareable URLs only ask for a name and show missing-room errors', async () => {
     const f = setup(`/room/${roomId}`);
     expect(screen.queryByLabelText('Room code')).not.toBeInTheDocument();

@@ -11,6 +11,7 @@ import { DominoChain } from './DominoChain';
 import { Seats } from './Seats';
 import { tableStatus } from './tableStatus';
 import { TableScene } from './TableScene';
+import { HeldTiles } from './HeldTiles';
 
 interface Props {
   room: RoomSnapshot;
@@ -152,55 +153,75 @@ export function GameTable({
                           : t('game.waitTurn')}
             </span>
           </div>
-          <div className="hand">
-            {game.private.hand.map((tile, index) => {
-              const moves = actions.filter(
-                (action) => action.type === 'play' && action.tile === tile,
-              );
-              const [left, right] = tile.split(':').map(Number);
-              return (
-                <button
-                  className={`hand-tile ${moves.length && !disabled ? 'playable' : ''}`}
-                  key={tile}
-                  style={{
-                    rotate: `${(index - (game.private.hand.length - 1) / 2) * 2}deg`,
-                  }}
-                  aria-label={t('game.playTile', { tile })}
-                  aria-describedby={`tile-state-${tile.replace(':', '-')}`}
-                  aria-pressed={chosen === tile}
-                  disabled={disabled || moves.length === 0}
-                  onClick={(event) => {
-                    selectedButton.current = event.currentTarget;
-                    if (moves.length === 1) play(moves[0]!);
-                    else setChoice({ tile, revision: game.revision });
-                  }}
-                >
-                  <Domino left={left!} right={right!} />
-                  <span className="tile-indicator" aria-hidden="true">
-                    {chosen === tile
-                      ? '✓'
-                      : !disabled && moves.length
-                        ? '•'
-                        : '−'}
-                  </span>
-                  <span
-                    className="sr-only"
-                    id={`tile-state-${tile.replace(':', '-')}`}
+          {actions.some((action) => action.type === 'pass') && (
+            <div className="hand-controls">
+              <button
+                disabled={disabled}
+                onClick={() => play({ type: 'pass' })}
+              >
+                {t('game.pass')}
+              </button>
+            </div>
+          )}
+          <HeldTiles
+            count={game.private.hand.length}
+            active={
+              !room.isPaused &&
+              state.phase === 'playing' &&
+              state.turn === own.seat
+            }
+          >
+            <div className="hand">
+              {game.private.hand.map((tile, index) => {
+                const moves = actions.filter(
+                  (action) => action.type === 'play' && action.tile === tile,
+                );
+                const [left, right] = tile.split(':').map(Number);
+                return (
+                  <button
+                    className={`hand-tile ${moves.length && !disabled ? 'playable' : ''}`}
+                    key={tile}
+                    style={{
+                      rotate: `${(index - (game.private.hand.length - 1) / 2) * 3}deg`,
+                      translate: `0 ${Math.abs(index - (game.private.hand.length - 1) / 2) * 1.5}px`,
+                    }}
+                    aria-label={t('game.playTile', { tile })}
+                    aria-describedby={`tile-state-${tile.replace(':', '-')}`}
+                    aria-pressed={chosen === tile}
+                    disabled={disabled || moves.length === 0}
+                    onClick={(event) => {
+                      selectedButton.current = event.currentTarget;
+                      if (moves.length === 1) play(moves[0]!);
+                      else setChoice({ tile, revision: game.revision });
+                    }}
                   >
-                    {t(
-                      pending
-                        ? 'game.sending'
-                        : chosen === tile
-                          ? 'game.tileSelected'
-                          : !disabled && moves.length
-                            ? 'game.tilePlayable'
-                            : 'game.tileUnavailable',
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    <Domino left={left!} right={right!} />
+                    <span className="tile-indicator" aria-hidden="true">
+                      {chosen === tile
+                        ? '✓'
+                        : !disabled && moves.length
+                          ? '•'
+                          : '−'}
+                    </span>
+                    <span
+                      className="sr-only"
+                      id={`tile-state-${tile.replace(':', '-')}`}
+                    >
+                      {t(
+                        pending
+                          ? 'game.sending'
+                          : chosen === tile
+                            ? 'game.tileSelected'
+                            : !disabled && moves.length
+                              ? 'game.tilePlayable'
+                              : 'game.tileUnavailable',
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </HeldTiles>
           {chosen && !disabled && (
             <div
               className="end-choice"
@@ -226,11 +247,6 @@ export function GameTable({
                 {t('game.cancel')}
               </button>
             </div>
-          )}
-          {actions.some((action) => action.type === 'pass') && (
-            <button disabled={disabled} onClick={() => play({ type: 'pass' })}>
-              {t('game.pass')}
-            </button>
           )}
         </section>
       </TableScene>

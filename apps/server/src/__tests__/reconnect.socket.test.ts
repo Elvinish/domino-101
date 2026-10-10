@@ -77,6 +77,10 @@ describe('secure real-socket seat restoration', () => {
     expect(fresh.joined).toEqual(original.joined);
     expect(fresh.game!.private).toEqual(previous.private);
     expect(fresh.game!.public).toEqual(previous.public);
+    expect(fresh.game!.public).not.toHaveProperty('revealedHands');
+    for (const other of members.slice(1))
+      for (const tile of other.game!.private.hand)
+        expect(JSON.stringify(fresh.game)).not.toContain(`"${tile}"`);
     expect(fresh.game!.matchId).toBe(previous.matchId);
     expect(fresh.room!.isPaused).toBe(false);
     expect(

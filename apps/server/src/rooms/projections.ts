@@ -61,6 +61,16 @@ export function projectPublicGame(state: MatchState): PublicGame {
       hands[2].length,
       hands[3].length,
     ],
+    ...(ended
+      ? {
+          revealedHands: [
+            [...hands[0]],
+            [...hands[1]],
+            [...hands[2]],
+            [...hands[3]],
+          ] as NonNullable<PublicGame['revealedHands']>,
+        }
+      : {}),
     score: {
       teams: {
         A: {

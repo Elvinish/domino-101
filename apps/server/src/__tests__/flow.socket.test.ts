@@ -136,9 +136,15 @@ it('four real clients finish a bot-assisted match using only private wire projec
         expect(text).not.toContain('"hands"');
         expect(text).not.toContain('"socketId"');
         expect(text).not.toContain('"state"');
-        for (const [other, hand] of hands.entries())
-          if (other !== index)
-            for (const tile of hand) expect(text).not.toContain(`"${tile}"`);
+        const reveal =
+          event.event === SERVER_EVENTS.game
+            ? gameSnapshotSchema.parse(event.payload).public.revealedHands
+            : undefined;
+        if (reveal) expect(reveal).toEqual(hands);
+        else
+          for (const [other, hand] of hands.entries())
+            if (other !== index)
+              for (const tile of hand) expect(text).not.toContain(`"${tile}"`);
       }
     }
   }

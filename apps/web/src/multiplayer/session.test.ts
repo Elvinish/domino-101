@@ -28,9 +28,15 @@ function snapshots(f: ReturnType<typeof fakeClient>) {
 }
 afterEach(() => {
   clients.splice(0).forEach((f) => f.client.dispose());
-  localStorage.clear();
+  sessionStorage.clear();
 });
 describe('private session persistence and restoration', () => {
+  it('never adopts a host credential from shared localStorage in a new tab', () => {
+    localStorage.setItem(sessionKey(roomId), JSON.stringify(session));
+    const f = setup();
+    expect(f.socket.emit).not.toHaveBeenCalled();
+    expect(browserSessions().read(roomId)).toBeNull();
+  });
   it('dismissing a replaced tab preserves the active tab saved session', async () => {
     const f = setup();
     snapshots(f);
@@ -45,7 +51,7 @@ describe('private session persistence and restoration', () => {
     const f = setup();
     snapshots(f);
     f.receive('room:session', session);
-    expect(JSON.parse(localStorage.getItem(sessionKey(roomId))!)).toEqual(
+    expect(JSON.parse(sessionStorage.getItem(sessionKey(roomId))!)).toEqual(
       session,
     );
     expect(
@@ -163,13 +169,13 @@ describe('private session persistence and restoration', () => {
     expect(f.client.getSnapshot().storageWarning).toBe('errors.storage');
   });
   it('rejects corrupt or foreign stored sessions', () => {
-    localStorage.setItem(
+    sessionStorage.setItem(
       sessionKey(roomId),
       JSON.stringify({ ...session, hand: ['1:1'] }),
     );
     expect(browserSessions().read(roomId)).toBeNull();
-    expect(localStorage.getItem(sessionKey(roomId))).toBeNull();
-    localStorage.setItem(sessionKey(roomId), '{bad');
+    expect(sessionStorage.getItem(sessionKey(roomId))).toBeNull();
+    sessionStorage.setItem(sessionKey(roomId), '{bad');
     expect(browserSessions().read(roomId)).toBeNull();
   });
   it('ignores a session addressed to another player', () => {
@@ -179,7 +185,7 @@ describe('private session persistence and restoration', () => {
       ...session,
       playerId: roomFixture().seats[1]!.playerId,
     });
-    expect(localStorage.getItem(sessionKey(roomId))).toBeNull();
+    expect(sessionStorage.getItem(sessionKey(roomId))).toBeNull();
   });
   it('does not log stored secrets on storage failure', () => {
     const log = vi.spyOn(console, 'error');

@@ -21,6 +21,8 @@ test('avatar upload stays local, survives reload and can be removed', async ({
     'src',
     /^data:image\/jpeg;base64,/,
   );
+  await expect(page.locator('.avatar-settings')).not.toHaveAttribute('open');
+  await expect(page.getByLabel(/Choose photo/)).toHaveValue('');
   expect(
     await page
       .locator('.own-seat .player-avatar img')
@@ -34,6 +36,27 @@ test('avatar upload stays local, survives reload and can be removed', async ({
   await page.getByLabel('Change your avatar').click();
   await page.getByRole('button', { name: 'Remove photo' }).click();
   await expect(page.locator('.own-seat .player-avatar img')).toHaveCount(0);
+  await expect(page.locator('.avatar-settings')).not.toHaveAttribute('open');
+  await expect(page.getByLabel(/Choose photo/)).toHaveValue('');
+  await page.getByLabel('Change your avatar').click();
+  await page.getByLabel(/Choose photo/).setInputFiles({
+    name: 'bad.svg',
+    mimeType: 'image/svg+xml',
+    buffer: Buffer.from('<svg/>'),
+  });
+  await expect(page.locator('.avatar-popover [role="status"]')).toContainText(
+    'Could not save',
+  );
+  await expect(page.locator('.avatar-settings')).toHaveAttribute('open');
+  await page.getByLabel(/Choose photo/).press('Escape');
+  await expect(page.locator('.avatar-settings')).not.toHaveAttribute('open');
+  await expect(page.getByLabel('Change your avatar')).toBeFocused();
+  await page.getByLabel('Change your avatar').click();
+  await page.getByRole('heading', { name: 'Better with four.' }).click();
+  await expect(page.locator('.avatar-settings')).not.toHaveAttribute('open');
+  await page.getByLabel('Change your avatar').click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.locator('.avatar-settings')).not.toHaveAttribute('open');
   await page.reload();
   await expect(page.getByLabel('Change your avatar')).toHaveText('H');
 });

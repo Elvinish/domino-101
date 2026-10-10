@@ -285,7 +285,7 @@ export class MultiplayerClient {
   leave = async () => {
     this.voice.leave();
     const roomId = this.state.joined?.roomId ?? this.desiredRoom;
-    // A replaced tab must not erase the active tab's shared localStorage credential.
+    // A replaced tab must not erase another tab's session credential.
     if (roomId && !this.state.replaced) this.sessions.clear(roomId);
     this.session = null;
     if (

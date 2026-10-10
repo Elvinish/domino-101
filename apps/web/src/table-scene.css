@@ -128,6 +128,7 @@ body:has(.lounge-room) select {
 .scene-player {
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
 }
 .scene-decoration {
@@ -136,6 +137,209 @@ body:has(.lounge-room) select {
 .scene-decoration * {
   pointer-events: none;
   user-select: none;
+}
+.table-decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.table-decor-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 1;
+  pointer-events: none;
+}
+.table-decor-seat--top {
+  top: 22px;
+  left: 11%;
+}
+.table-decor-seat--left {
+  top: 15%;
+  left: 18px;
+  flex-direction: column;
+}
+.table-decor-seat--right {
+  top: 15%;
+  right: 18px;
+  flex-direction: column;
+}
+.table-decor-seat--bottom {
+  right: 11%;
+  bottom: 22px;
+}
+.table-decor-seat.is-arriving {
+  animation: table-decor-in 520ms ease-out both;
+}
+.table-decor-seat.is-leaving {
+  animation: table-decor-out 480ms ease-in both;
+}
+.table-prop {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  filter: drop-shadow(2px 4px 3px #180d0990);
+}
+.table-prop img,
+.table-prop-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.table-prop-glyph {
+  position: absolute;
+  inset: 10px;
+  border: 2px solid #d9b27b;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #6b4124, #2a1a12);
+  box-shadow:
+    inset 0 1px 2px #f4d59a66,
+    0 2px 2px #160c0770;
+}
+.table-prop-glyph::after {
+  content: '•';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f6ddb1;
+  font:
+    20px Georgia,
+    serif;
+}
+.table-prop--phone .table-prop-glyph,
+.table-prop--book .table-prop-glyph {
+  border-radius: 4px;
+  transform: rotate(-8deg);
+}
+.table-prop--phone .table-prop-glyph::after {
+  content: '⌁';
+}
+.table-prop--fruit .table-prop-glyph,
+.table-prop--dish .table-prop-glyph {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #d99048 0 13%,
+    #71361f 14% 31%,
+    #2c1a12 33% 100%
+  );
+}
+.table-prop--fruit .table-prop-glyph::after {
+  content: '✦';
+  font-size: 15px;
+}
+.table-prop--keys .table-prop-glyph {
+  border-radius: 50%;
+  transform: rotate(28deg);
+}
+.table-prop--keys .table-prop-glyph::after {
+  content: '⌁';
+}
+.table-prop--candle .table-prop-glyph::after {
+  content: '✦';
+  color: #ffd780;
+}
+.table-prop--plant .table-prop-glyph::after {
+  content: '❧';
+  color: #9fb87a;
+}
+.table-prop-vapor {
+  position: absolute;
+  width: 24px;
+  height: 36px;
+  left: 43%;
+  top: -4%;
+  border-left: 2px solid #f8ead3;
+  border-radius: 50%;
+  opacity: 0.22;
+  filter: blur(0.4px);
+  animation: table-vapor 8s ease-in-out infinite alternate;
+}
+.table-prop-vapor::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 12px;
+  width: 15px;
+  height: 26px;
+  border-left: 1px solid #f8ead3;
+  border-radius: 50%;
+}
+.table-prop-vapor--smoke {
+  opacity: 0.16;
+  filter: blur(1px);
+}
+.table-prop--glint .table-prop-art {
+  animation: table-glint 13s ease-in-out infinite;
+}
+.table-prop--flicker .prop-flame {
+  animation: table-flicker 3.5s ease-in-out infinite;
+}
+.table-prop--sway .prop-leaves {
+  animation: table-sway 9s ease-in-out infinite alternate;
+}
+@keyframes table-decor-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes table-decor-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+@keyframes table-vapor {
+  from {
+    transform: translate(0, 2px) rotate(-4deg);
+    opacity: 0.08;
+  }
+  to {
+    transform: translate(6px, -8px) rotate(5deg);
+    opacity: 0.24;
+  }
+}
+@keyframes table-glint {
+  0%,
+  76%,
+  100% {
+    filter: brightness(1);
+  }
+  82% {
+    filter: brightness(1.1);
+  }
+}
+@keyframes table-flicker {
+  0%,
+  100% {
+    filter: brightness(0.96);
+  }
+  48% {
+    filter: brightness(1.08);
+  }
+}
+@keyframes table-sway {
+  from {
+    transform: rotate(-1deg);
+  }
+  to {
+    transform: rotate(1deg);
+  }
 }
 .scene-hand {
   position: absolute;
@@ -536,6 +740,15 @@ body:has(.lounge-room) select {
 .lounge-room .hand-heading h3 span {
   color: #eddbbf;
 }
+.lounge-room .hand-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.lounge-room .hand-controls > button {
+  min-width: 104px;
+  min-height: 48px;
+}
 .lounge-room .hand {
   gap: 10px;
 }
@@ -607,6 +820,29 @@ body:has(.lounge-room) select {
   background: #f0dbae;
 }
 @media (min-width: 641px) and (max-width: 1100px) {
+  .table-prop {
+    width: 40px;
+    height: 40px;
+  }
+  .table-prop-glyph {
+    inset: 8px;
+  }
+  .table-decor-seat--top {
+    top: 18px;
+    left: 8%;
+  }
+  .table-decor-seat--left {
+    top: 13%;
+    left: 10px;
+  }
+  .table-decor-seat--right {
+    top: 13%;
+    right: 10px;
+  }
+  .table-decor-seat--bottom {
+    right: 8%;
+    bottom: 18px;
+  }
   .lounge-scene {
     padding: 96px 48px 100px;
   }
@@ -811,6 +1047,261 @@ body:has(.lounge-room) select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* A held row owns its hands: the photo halves track its outer edges. */
+.held-set {
+  --grip-width: 520px;
+  --grip-height: 346.667px;
+  --grip-inset: -208px;
+  --grip-top: -10px;
+  position: relative;
+  isolation: isolate;
+  width: max-content;
+  min-width: 64px;
+  max-width: 100%;
+  margin: 18px auto 8px;
+}
+.grip-layer,
+.grip-photo {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+.grip-layer {
+  inset: 0;
+  z-index: 0;
+}
+.grip-layer--front {
+  z-index: 3;
+}
+.grip-photo {
+  top: var(--grip-top);
+  width: var(--grip-width);
+  height: var(--grip-height);
+}
+.grip-photo--left {
+  left: var(--grip-inset);
+  clip-path: inset(0 50% 0 0);
+}
+.grip-photo--right {
+  right: var(--grip-inset);
+  clip-path: inset(0 0 0 50%);
+}
+.grip-layer--front .grip-photo--left {
+  clip-path: polygon(
+    18% 43%,
+    18% 32%,
+    29% 27%,
+    40% 27%,
+    44% 29%,
+    44% 34%,
+    37% 36%,
+    28% 43%
+  );
+}
+.grip-layer--front .grip-photo--right {
+  clip-path: polygon(
+    82% 43%,
+    82% 32%,
+    71% 27%,
+    60% 27%,
+    56% 29%,
+    56% 34%,
+    63% 36%,
+    72% 43%
+  );
+}
+.grip-photo img,
+.holding-hand .grip-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: brightness(0.97) saturate(0.92);
+}
+.scene-player.is-active .holding-hand img {
+  animation: none;
+  filter: brightness(0.97) saturate(0.92);
+}
+.held-set.is-active {
+  animation: grip-attention 1600ms ease-out both;
+}
+@keyframes grip-attention {
+  from {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 -2px;
+  }
+  to {
+    translate: 0 -1px;
+  }
+}
+.held-set.is-empty .grip-layer {
+  visibility: hidden;
+}
+.lounge-room .local-grip .hand {
+  position: relative;
+  z-index: 1;
+  gap: 0;
+  flex-wrap: nowrap;
+  min-height: 112px;
+}
+.lounge-room .local-grip .hand-tile {
+  margin-inline: -1.5px;
+  transform-origin: 50% 90%;
+}
+.lounge-room .local-grip .tile-indicator {
+  top: -24px;
+  bottom: auto;
+}
+.lounge-room .local-grip .hand-tile:hover:not(:disabled),
+.lounge-room .local-grip .hand-tile:focus-visible,
+.lounge-room .local-grip .hand-tile[aria-pressed='true'] {
+  z-index: 2;
+}
+.scene-hand.holding-hand {
+  width: max-content;
+  height: auto;
+}
+.holding-hand .held-set {
+  --grip-width: 280px;
+  --grip-height: 186.667px;
+  --grip-inset: -112px;
+  --grip-top: 0px;
+  margin: 0;
+  min-width: 32px;
+}
+.holding-hand .grip-photo {
+  position: absolute;
+  width: var(--grip-width);
+  height: var(--grip-height);
+}
+.holding-hand .concealed-hand {
+  position: relative;
+  z-index: 1;
+  inset: auto;
+  width: max-content;
+  min-width: 32px;
+  min-height: 58px;
+  gap: 0;
+  transform: none;
+}
+.holding-hand .concealed-tile {
+  width: 28px;
+  height: 56px;
+  margin-inline: -1.5px;
+  transform-origin: 50% 90%;
+}
+.revealed-tile {
+  display: inline-block;
+}
+.revealed-tile .domino {
+  padding: 2px;
+  border-radius: 4px;
+}
+.revealed-tile .pips {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  gap: 1px;
+  padding: 1px;
+}
+.revealed-tile .pip {
+  width: 3px;
+  height: 3px;
+}
+.revealed-tile .tile-divider {
+  margin: 2px 0;
+  flex-shrink: 0;
+}
+.holding-hand .revealed-tile {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 56px;
+  margin-inline: -1.5px;
+  transform-origin: 50% 90%;
+}
+.holding-hand .revealed-tile .domino {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.seat-reveal {
+  display: none;
+}
+.scene-hand--top.holding-hand {
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+}
+.scene-hand--left.holding-hand {
+  left: 58px;
+  top: 44%;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.scene-hand--right.holding-hand {
+  right: 58px;
+  top: 44%;
+  transform: translate(50%, -50%) rotate(-90deg);
+}
+@media (min-width: 641px) and (max-width: 1100px) {
+  .holding-hand .held-set {
+    --grip-width: 240px;
+    --grip-height: 160px;
+    --grip-inset: -96px;
+  }
+  .holding-hand .concealed-tile {
+    width: 24px;
+    height: 48px;
+  }
+  .holding-hand .revealed-tile {
+    width: 24px;
+    height: 48px;
+  }
+  .holding-hand .concealed-hand {
+    min-height: 50px;
+  }
+  .scene-hand--top.holding-hand {
+    top: 16px;
+  }
+  .scene-hand--left.holding-hand {
+    left: 34px;
+  }
+  .scene-hand--right.holding-hand {
+    right: 34px;
+  }
+}
+@media (max-width: 640px) {
+  .grip-layer {
+    display: none;
+  }
+  .seat-reveal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 8px 0 4px;
+  }
+  .seat-reveal .revealed-tile .domino {
+    width: 22px;
+    height: 44px;
+    min-width: 0;
+  }
+  .held-set {
+    width: 100%;
+    margin: 0;
+  }
+  .lounge-room .local-grip .hand {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .lounge-room .local-grip .hand-tile {
+    margin-inline: 0;
+  }
+  .lounge-room .local-grip .tile-indicator {
+    top: auto;
+    bottom: -22px;
+  }
+}
 /* Lobby has its own clear center; these rules never affect a running match. */
 .physical-table.lobby-table .lobby-center {
   width: 100%;
@@ -912,10 +1403,22 @@ body:has(.lounge-room) select {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .held-set.is-active {
+    animation: none;
+  }
   .scene-player.is-active .scene-hand img,
   .scene-smoke path,
-  .board-placement.is-arriving {
+  .board-placement.is-arriving,
+  .table-decor-seat.is-arriving,
+  .table-decor-seat.is-leaving,
+  .table-prop-vapor,
+  .table-prop--glint .table-prop-art,
+  .table-prop--flicker .prop-flame,
+  .table-prop--sway .prop-leaves {
     animation: none;
+  }
+  .table-decor-seat.is-leaving {
+    display: none;
   }
   .scene-hand img,
   .lounge-room .hand-tile {

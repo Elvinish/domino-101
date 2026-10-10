@@ -9,7 +9,7 @@ export interface SessionStore {
 }
 /** No hands, scores or socket IDs are persisted. Storage can be denied by the browser. */
 export function browserSessions(
-  storage: () => Storage = () => window.localStorage,
+  storage: () => Storage = () => window.sessionStorage,
 ): SessionStore {
   return {
     read(roomId) {

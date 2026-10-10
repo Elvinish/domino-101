@@ -25,6 +25,12 @@ export const SERVER_EVENTS = {
   error: 'server:error',
 } as const;
 export const roomIdSchema = z.string().regex(/^[a-f0-9]{32}$/);
+/** Human-entered codes normalize once; persisted IDs and outbound DTOs stay canonical. */
+export const roomCodeSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(roomIdSchema);
 export const playerIdSchema = z.uuid();
 export const seatSchema = z.union([
   z.literal(0),
@@ -76,7 +82,7 @@ export const createRoomSchema = z.strictObject({
   displayName: displayNameSchema,
 });
 export const joinRoomSchema = z.strictObject({
-  roomId: roomIdSchema,
+  roomId: roomCodeSchema,
   displayName: displayNameSchema,
 });
 export const reconnectSessionSchema = z.strictObject({
@@ -299,25 +305,51 @@ const resultSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({ kind: z.literal('seka'), remainingPoints: totalsSchema }),
 ]);
-export const publicGameSchema = z.strictObject({
-  phase: z.enum([
-    'playing',
-    'round-ended',
-    'starter-selection',
-    'match-finished',
-  ]),
-  roundNumber: counter.min(1),
-  board: boardSchema,
-  openEnds: z.strictObject({ left: pip, right: pip }).nullable(),
-  turn: seatSchema.nullable(),
-  starter: seatSchema.nullable(),
-  eligibleTeam: teamSchema.nullable(),
-  handCounts: countsSchema,
-  score: scoresSchema,
-  result: resultSchema.nullable(),
-  awardedPoints: counter.nullable(),
-  winner: teamSchema.nullable(),
-});
+export const publicGameSchema = z
+  .strictObject({
+    phase: z.enum([
+      'playing',
+      'round-ended',
+      'starter-selection',
+      'match-finished',
+    ]),
+    roundNumber: counter.min(1),
+    board: boardSchema,
+    openEnds: z.strictObject({ left: pip, right: pip }).nullable(),
+    turn: seatSchema.nullable(),
+    starter: seatSchema.nullable(),
+    eligibleTeam: teamSchema.nullable(),
+    handCounts: countsSchema,
+    // Absent until the server commits an ended round. Indexed by absolute seat.
+    revealedHands: z
+      .tuple([
+        z.array(tileSchema).max(7),
+        z.array(tileSchema).max(7),
+        z.array(tileSchema).max(7),
+        z.array(tileSchema).max(7),
+      ])
+      .optional(),
+    score: scoresSchema,
+    result: resultSchema.nullable(),
+    awardedPoints: counter.nullable(),
+    winner: teamSchema.nullable(),
+  })
+  .superRefine((game, context) => {
+    const ended =
+      game.phase === 'round-ended' || game.phase === 'match-finished';
+    if (
+      game.revealedHands &&
+      (!ended ||
+        game.revealedHands.some(
+          (hand, seat) => hand.length !== game.handCounts[seat],
+        ))
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Reveal requires an ended round and matching seat counts',
+        path: ['revealedHands'],
+      });
+  });
 export const gameSnapshotSchema = z.strictObject({
   roomId: roomIdSchema,
   matchId: z.uuid(),

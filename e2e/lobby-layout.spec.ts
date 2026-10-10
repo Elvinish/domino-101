@@ -51,10 +51,10 @@ test('waiting and full lobbies leave the center clear of seats and hands', async
   await page.locator('.lounge-scene').screenshot({
     path: `test-results/${info.project.name}-lobby-spacious-waiting.png`,
   });
-  await page
-    .getByRole('button', { name: 'Fill empty seats with bots' })
-    .click();
-  await expect(page.getByRole('button', { name: 'Remove bot' })).toHaveCount(3);
+  await page.getByRole('button', { name: 'Fill empty seats' }).click();
+  await expect(page.getByRole('button', { name: 'Remove player' })).toHaveCount(
+    3,
+  );
   await expectClearLobby(page);
   await page.locator('.lounge-scene').screenshot({
     path: `test-results/${info.project.name}-lobby-spacious-ready.png`,

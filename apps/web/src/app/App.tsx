@@ -16,6 +16,7 @@ import type { ClientState, MultiplayerClient } from '../multiplayer/client';
 import { parseWebEnv } from '../config/env';
 import { Entry } from '../components/Entry';
 import { Room } from '../components/Room';
+import { roomCodeSchema } from '@domino/protocol';
 
 function RoomRoute({
   client,
@@ -25,7 +26,9 @@ function RoomRoute({
   state: ClientState;
 }) {
   const { t } = useI18n();
-  const { roomId } = useParams();
+  const { roomId: routeRoomId } = useParams();
+  const parsedRoom = roomCodeSchema.safeParse(routeRoomId);
+  const roomId = parsedRoom.success ? parsedRoom.data : routeRoomId;
   if (state.restoring)
     return (
       <main id="main-content" tabIndex={-1} className="room-page">
@@ -84,9 +87,10 @@ function AppContent({
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
-    client.setRoom(
-      /^\/room\/([a-f0-9]{32})$/.exec(location.pathname)?.[1] ?? null,
+    const code = roomCodeSchema.safeParse(
+      /^\/room\/([^/]+)\/?$/.exec(location.pathname)?.[1],
     );
+    client.setRoom(code.success ? code.data : null);
   }, [client, location.pathname]);
   useEffect(() => {
     client.connect();

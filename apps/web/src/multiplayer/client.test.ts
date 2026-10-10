@@ -62,7 +62,7 @@ describe('multiplayer transport state', () => {
   });
   it('sends only name and code when joining', async () => {
     const f = setup();
-    const request = f.client.join(roomId, 'Guest');
+    const request = f.client.join(`  ${roomId.toUpperCase()}  `, 'Guest');
     expect(f.socket.emit.mock.calls[0]?.slice(0, 2)).toEqual([
       'room:join',
       { roomId, displayName: 'Guest' },

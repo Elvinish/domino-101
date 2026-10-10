@@ -5,3 +5,4 @@ export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
 export * from './multiplayer.js';
 export * from './voice.js';
+export * from './personas.js';

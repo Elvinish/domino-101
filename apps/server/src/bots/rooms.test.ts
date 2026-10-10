@@ -10,6 +10,8 @@ import { serializeRoom } from '../persistence/codec.js';
 import { MemoryPersistence } from '../__tests__/memory-persistence.js';
 import { botClock } from '../__tests__/bot-clock.js';
 import { BOT_DELAY_MS, botDecision } from './scheduler.js';
+import { PERSONA_NAMES } from '../rooms/personas.js';
+import { findBotPersona, gameSnapshotSchema } from '@domino/protocol';
 
 const services: RoomService[] = [];
 afterEach(async () => {
@@ -118,6 +120,9 @@ describe('host-managed lobby bots', () => {
     expect(f.room().seats[2]).toBeNull();
     await f.manage({ type: 'fill' });
     expect(f.room().seats.filter(Boolean)).toHaveLength(4);
+    const names = f.room().seats.map((player) => player!.displayName);
+    expect(new Set(names).size).toBe(4);
+    for (const name of names.slice(1)) expect(PERSONA_NAMES).toContain(name);
     expect(f.room().revision).toBe(4);
     await expect(f.manage({ type: 'fill' })).rejects.toMatchObject({
       code: 'ROOM_FULL',
@@ -314,6 +319,26 @@ describe('scheduled authoritative bot turns', () => {
     ) {
       const state = f.room().match!.state;
       const decision = botDecision(f.room());
+      for (const player of f.room().seats) {
+        const snapshot = projectGame(f.room(), player!);
+        if (state.phase === 'round-ended' || state.phase === 'match-finished') {
+          expect(snapshot.public.revealedHands).toEqual(state.round.hands);
+        } else {
+          expect(snapshot.public).not.toHaveProperty('revealedHands');
+          const hands =
+            state.phase === 'playing' ? state.round.hands : state.hands;
+          for (const [seat, hand] of hands.entries())
+            if (seat !== player!.seat)
+              for (const tile of hand)
+                expect(JSON.stringify(snapshot)).not.toContain(`"${tile}"`);
+          expect(
+            gameSnapshotSchema.safeParse({
+              ...snapshot,
+              public: { ...snapshot.public, revealedHands: hands },
+            }).success,
+          ).toBe(false);
+        }
+      }
       if (decision) {
         const player = f
           .room()
@@ -354,6 +379,11 @@ describe('scheduled authoritative bot turns', () => {
       coverage.moves++;
     }
     expect(f.room().lifecycle).toBe('completed');
+    const ended = f.room().match!.state;
+    if (ended.phase !== 'match-finished') throw new Error('Expected match end');
+    expect(
+      projectGame(f.room(), f.room().seats[0]!).public.revealedHands,
+    ).toEqual(ended.round.hands);
     expect(f.timing.next()).toBeUndefined();
     expect(coverage.pass).toBeGreaterThan(0);
     expect(coverage.ambiguous).toBeGreaterThan(0);
@@ -365,10 +395,93 @@ describe('scheduled authoritative bot turns', () => {
 });
 
 describe('durable bot memberships', () => {
+  it('restores an ended-round reveal and removes it when the next round is committed', async () => {
+    const store = new MemoryPersistence(),
+      f = await started(store);
+    for (
+      let step = 0;
+      step < 100 && f.room().match!.state.phase === 'playing';
+      step++
+    ) {
+      if (botDecision(f.room())) await f.tick();
+      else
+        await f.act(
+          projectGame(f.room(), f.room().seats[0]!).private.legalActions[0]!,
+        );
+    }
+    expect(f.room().match!.state.phase).toBe('round-ended');
+    const before = projectGame(f.room(), f.room().seats[0]!).public;
+    expect(before.revealedHands).toBeDefined();
+    await f.service.close();
+    let recovered!: Room;
+    const service = new RoomService({
+      persistence: store,
+      botClock: botClock().clock,
+      onUpdate: (room) => {
+        recovered = room;
+      },
+      onJoined: () => {},
+    });
+    services.push(service);
+    await service.restore();
+    const host = connection();
+    await service.reconnect(host, f.sessions[0]!);
+    expect(projectGame(recovered, recovered.seats[0]!).public).toEqual(before);
+    expect(
+      (
+        await service.game(host, {
+          roomId: recovered.id,
+          commandId: randomUUID(),
+          expectedRevision: recovered.revision,
+          command: { type: 'next-round' },
+        })
+      ).ok,
+    ).toBe(true);
+    expect(
+      projectGame(recovered, recovered.seats[0]!).public,
+    ).not.toHaveProperty('revealedHands');
+  });
+  it('upgrades legacy placeholders once and persists the assigned names across two restores', async () => {
+    const store = new MemoryPersistence(),
+      f = await setup(store);
+    await f.manage({ type: 'fill' });
+    await f.service.close();
+    const original = store.rooms.get(f.room().id)!;
+    store.rooms.set(original.roomId, {
+      ...original,
+      players: original.players.map((p) =>
+        p.kind === 'bot' ? { ...p, displayName: `Domino ${p.seat + 1}` } : p,
+      ),
+    });
+    let first: string[] | undefined;
+    for (let restart = 0; restart < 2; restart++) {
+      const service = new RoomService({
+        persistence: store,
+        onUpdate: () => {},
+        onJoined: () => {},
+      });
+      services.push(service);
+      await service.restore();
+      const players = store.rooms.get(original.roomId)!.players;
+      const names = players.map((p) => p.displayName);
+      expect(players.map((p) => p.playerId)).toEqual(
+        original.players.map((p) => p.playerId),
+      );
+      expect(new Set(names).size).toBe(4);
+      for (const name of names.slice(1)) expect(PERSONA_NAMES).toContain(name);
+      if (first) expect(names).toEqual(first);
+      first = names;
+      await service.close();
+    }
+  });
   it('persists identity and kind, restores bots offline without credentials, and resumes after the human returns', async () => {
     const store = new MemoryPersistence(),
       f = await started(store);
     const bots = serializeRoom(f.room()).players.slice(1);
+    const personas = bots.map((p) => findBotPersona(p.displayName));
+    expect(personas.every((p) => p?.gender && p.playerType === 'bot')).toBe(
+      true,
+    );
     await f.service.close();
     const timing = botClock();
     let recovered!: Room;
@@ -386,6 +499,17 @@ describe('durable bot memberships', () => {
     expect(store.rooms.get(f.room().id)!.players.slice(1)).toEqual(bots);
     await service.reconnect(connection(), f.sessions[0]!);
     expect(projectRoom(recovered).isPaused).toBe(false);
+    expect(
+      recovered.seats
+        .slice(1)
+        .map((p) => [p!.playerId, p!.displayName, p!.kind]),
+    ).toEqual(bots.map((p) => [p.playerId, p.displayName, p.kind]));
+    expect(
+      recovered.seats.slice(1).map((p) => findBotPersona(p!.displayName)),
+    ).toEqual(personas);
+    expect(
+      projectGame(recovered, recovered.seats[0]!).public,
+    ).not.toHaveProperty('revealedHands');
     timing.fire();
     await recovered.queue.drain();
     expect(recovered.seats[3]!.commands.size).toBe(1);
