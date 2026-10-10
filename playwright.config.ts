@@ -30,6 +30,15 @@ export default defineConfig({
       },
     },
     { name: 'phone', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'phone-webkit',
+      testMatch: /mobile-game\.spec\.ts/,
+      use: {
+        ...devices['iPhone 12 Pro Max'],
+        browserName: 'webkit',
+        launchOptions: { args: [] },
+      },
+    },
   ],
   webServer: [
     {

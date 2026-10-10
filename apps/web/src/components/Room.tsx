@@ -1,5 +1,4 @@
 import { useI18n } from '../i18n';
-import type { MessageKey } from '../i18n';
 import { useState } from 'react';
 import type { ClientState, MultiplayerClient } from '../multiplayer/client';
 import { Seats } from './Seats';
@@ -7,6 +6,9 @@ import { GameTable } from './GameTable';
 import { ChatPanel } from './ChatPanel';
 import { VoicePanel } from './VoicePanel';
 import { TableScene } from './TableScene';
+import { RoomInfo } from './RoomInfo';
+import { ResponsivePanel } from './ResponsivePanel';
+import { usePhoneLayout } from '../mobile';
 
 export function Room({
   client,
@@ -16,8 +18,10 @@ export function Room({
   state: ClientState;
 }) {
   const { t } = useI18n();
-  const [copyStatus, setCopyStatus] = useState<MessageKey | null>(null);
+  const phone = usePhoneLayout();
+  const [chatOpen, setChatOpen] = useState(false);
   const { joined, room, game } = state;
+  const mobile = phone && !!game && room?.lifecycle !== 'lobby';
   if (!joined || !room)
     return (
       <main id="main-content" tabIndex={-1} className="room-page lounge-room">
@@ -29,41 +33,9 @@ export function Room({
   );
   const host = room.hostId === joined.playerId;
   const disabled = state.pending || state.status !== 'connected';
-  async function copy(value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyStatus('room.copied');
-    } catch {
-      setCopyStatus('room.copyFailed');
-    }
-  }
   return (
     <main id="main-content" tabIndex={-1} className="room-page lounge-room">
-      <div className="room-heading">
-        <div>
-          <p className="eyebrow">{t('room.private')}</p>
-          <h1>{room.lifecycle === 'lobby' ? t('room.title') : 'Domino 101'}</h1>
-        </div>
-        <div className="share-actions">
-          <button
-            className="quiet"
-            onClick={() =>
-              void copy(`${window.location.origin}/room/${room.roomId}`)
-            }
-          >
-            {t('room.copyLink')}
-          </button>
-          <button className="quiet" onClick={() => void copy(room.roomId)}>
-            {t('room.copyCode')}
-          </button>
-        </div>
-      </div>
-      <div className="room-code">
-        <span>{t('room.code')}</span> <code>{room.roomId}</code>
-      </div>
-      <p className="copy-status" role="status">
-        {copyStatus && t(copyStatus)}
-      </p>
+      {!mobile && <RoomInfo room={room} />}
       {room.isPaused && state.status === 'connected' && !state.replaced && (
         <p className="notice" role="alert">
           {t('room.paused')}
@@ -138,25 +110,36 @@ export function Room({
         </p>
       )}
       {!state.replaced && (
-        <VoicePanel
-          voice={client.voice}
-          room={room}
-          own={joined}
-          disabled={state.status !== 'connected' || state.restoring}
-        />
+        <ResponsivePanel mobile={mobile} kind="voice" label={t('voice.title')}>
+          <VoicePanel
+            voice={client.voice}
+            room={room}
+            own={joined}
+            disabled={state.status !== 'connected' || state.restoring}
+          />
+        </ResponsivePanel>
       )}
       {!state.replaced && (
-        <ChatPanel
-          messages={state.chat}
-          reactionEvents={state.reactions}
-          unread={state.unreadChat}
-          pending={state.chatPending}
-          disabled={state.status !== 'connected' || state.replaced}
-          error={state.chatError}
-          onSend={client.sendChat}
-          onReaction={client.sendReaction}
-          onRead={client.markChatRead}
-        />
+        <ResponsivePanel
+          mobile={mobile}
+          kind="chat"
+          label={t('chat.title')}
+          badge={state.unreadChat}
+          onOpenChange={setChatOpen}
+        >
+          <ChatPanel
+            expanded={mobile ? chatOpen : undefined}
+            messages={state.chat}
+            reactionEvents={state.reactions}
+            unread={state.unreadChat}
+            pending={state.chatPending}
+            disabled={state.status !== 'connected' || state.replaced}
+            error={state.chatError}
+            onSend={client.sendChat}
+            onReaction={client.sendReaction}
+            onRead={client.markChatRead}
+          />
+        </ResponsivePanel>
       )}
     </main>
   );

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
+import { openChat, openVoice } from './panels';
 
 interface VoiceQA {
   calls: number;
@@ -230,6 +231,9 @@ test('opt-in real audio mesh, mute, refresh cleanup and independent game/chat co
       await expect(
         page.getByRole('region', { name: 'Your hand' }),
       ).toBeVisible();
+    // Changing to the compact shell must not dispose an active voice session.
+    for (const page of [host, guest])
+      expect(await stats(page)).toMatchObject({ calls: 1, live: 1, active: 1 });
     const revision = Number(
       await host.locator('.game').getAttribute('data-revision'),
     );
@@ -252,8 +256,7 @@ test('opt-in real audio mesh, mute, refresh cleanup and independent game/chat co
         'data-revision',
         String(revision + 1),
       );
-    for (const page of [host, guest])
-      await page.getByRole('button', { name: /Room chat/ }).click();
+    for (const page of [host, guest]) await openChat(page);
     await host
       .getByRole('textbox', { name: 'Chat message' })
       .fill('Voice and chat work together');
@@ -265,11 +268,13 @@ test('opt-in real audio mesh, mute, refresh cleanup and independent game/chat co
     await expect(
       guest.getByRole('region', { name: 'Your hand' }),
     ).toBeVisible();
+    await openVoice(guest);
     await expect(
       panel(guest).getByRole('button', { name: 'Enable microphone' }),
     ).toBeEnabled();
     expect(await stats(guest)).toMatchObject({ calls: 0, live: 0, active: 0 });
     await expect.poll(async () => (await stats(host)).active).toBe(0);
+    await openVoice(host);
     await expect(panel(host).locator('audio')).toHaveCount(0);
     await panel(guest)
       .getByRole('button', { name: 'Enable microphone' })
@@ -292,7 +297,12 @@ test('opt-in real audio mesh, mute, refresh cleanup and independent game/chat co
     expect(await stats(host)).toMatchObject({ active: 0, live: 0, enabled: 0 });
     await expect.poll(async () => (await stats(guest)).active).toBe(0);
     await expect(panel(guest).locator('audio')).toHaveCount(0);
-    await guest.getByRole('button', { name: /Room chat/ }).click();
+    if (await guest.locator('.phone-game').count())
+      await guest.getByRole('button', { name: 'Close panel' }).click();
+    if (await host.locator('.phone-game').count())
+      await host.getByRole('button', { name: 'Close panel' }).click();
+    await openChat(guest);
+    await openChat(host);
     await guest
       .getByRole('textbox', { name: 'Chat message' })
       .fill('Still here after voice leave');

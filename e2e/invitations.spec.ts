@@ -80,7 +80,9 @@ test('code, direct invite, fresh tab and reload use the same room without sharin
     ).toBeVisible();
     await outsider.getByLabel('Your display name').fill('Fifth guest');
     await outsider.getByRole('button', { name: 'Join room' }).click();
-    await expect(outsider.getByRole('alert')).toContainText('full');
+    await expect(outsider.getByRole('alert')).toContainText(
+      'This table already has four players.',
+    );
     await expect(outsider.locator('.own-seat')).toHaveCount(0);
   } finally {
     await tab.close();

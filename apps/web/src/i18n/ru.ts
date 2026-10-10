@@ -1,5 +1,8 @@
 import type { Messages } from './en';
 export const ru: Messages = {
+  'mobile.menu': 'Меню стола',
+  'mobile.close': 'Закрыть панель',
+  'mobile.remaining': 'Оставшиеся кости',
   'avatar.change': 'Изменить свой аватар',
   'avatar.local':
     'Фото хранится только в этом браузере и не передаётся другим игрокам.',

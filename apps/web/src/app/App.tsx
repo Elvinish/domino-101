@@ -17,6 +17,11 @@ import { parseWebEnv } from '../config/env';
 import { Entry } from '../components/Entry';
 import { Room } from '../components/Room';
 import { roomCodeSchema } from '@domino/protocol';
+import { usePhoneLayout } from '../mobile';
+import { ResponsivePanel } from '../components/ResponsivePanel';
+import { RoomInfo } from '../components/RoomInfo';
+import { RevealedTiles } from '../components/RevealedTiles';
+import { revealedHand } from '../reveal';
 
 function RoomRoute({
   client,
@@ -86,6 +91,26 @@ function AppContent({
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const navigate = useNavigate();
   const location = useLocation();
+  const phone = usePhoneLayout();
+  const routeRoom = roomCodeSchema.safeParse(
+    /^\/room\/([^/]+)\/?$/.exec(location.pathname)?.[1],
+  );
+  const phoneGame =
+    phone &&
+    !!state.game &&
+    state.room?.lifecycle !== 'lobby' &&
+    routeRoom.success &&
+    routeRoom.data === state.joined?.roomId;
+  useEffect(() => {
+    if (!phoneGame) return;
+    const previousScroll = window.scrollY;
+    document.documentElement.classList.add('phone-game-open');
+    window.scrollTo(0, 0);
+    return () => {
+      document.documentElement.classList.remove('phone-game-open');
+      window.scrollTo(0, previousScroll);
+    };
+  }, [phoneGame]);
   useEffect(() => {
     const code = roomCodeSchema.safeParse(
       /^\/room\/([^/]+)\/?$/.exec(location.pathname)?.[1],
@@ -101,7 +126,11 @@ function AppContent({
     void navigate('/');
   }
   return (
-    <div onPointerDownCapture={sound.unlock} onKeyDownCapture={sound.unlock}>
+    <div
+      className={`app-shell ${phoneGame ? 'phone-game' : ''}`}
+      onPointerDownCapture={sound.unlock}
+      onKeyDownCapture={sound.unlock}
+    >
       <a className="skip-link" href="#main-content">
         {t('app.skip')}
       </a>
@@ -115,53 +144,107 @@ function AppContent({
           </span>{' '}
           DOMINO <b>101</b>
         </Link>
-        <div className="header-actions">
-          <label className="language-control">
-            <span className="sr-only">{t('app.language')}</span>
-            <select
-              value={locale}
-              onChange={(event) => {
-                if (isLocale(event.target.value)) setLocale(event.target.value);
-              }}
-            >
-              {Object.entries(locales).map(([value, label]) => (
-                <option key={value} value={value} lang={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="quiet sound-toggle"
-            aria-pressed={soundState.enabled}
-            onClick={sound.toggle}
-          >
-            <span aria-hidden="true">{soundState.enabled ? '♪' : '♩'}</span>{' '}
-            {t(soundState.enabled ? 'sound.mute' : 'sound.enable')}
-          </button>
-          <span className={`connection ${state.status}`} role="status">
-            {state.replaced
-              ? t('connection.replaced')
-              : state.restoring
-                ? t('connection.restoring')
-                : state.reconnecting
-                  ? t('connection.reconnecting')
-                  : state.status === 'connecting'
-                    ? t('connection.connecting')
-                    : state.status === 'connected'
-                      ? t('connection.connected')
-                      : t('connection.disconnected')}
-          </span>
-          {state.joined && (
+        <ResponsivePanel
+          mobile={phoneGame}
+          kind="settings"
+          label={t('mobile.menu')}
+        >
+          <div className="header-actions">
+            <label className="language-control">
+              <span className="sr-only">{t('app.language')}</span>
+              <select
+                value={locale}
+                onChange={(event) => {
+                  if (isLocale(event.target.value))
+                    setLocale(event.target.value);
+                }}
+              >
+                {Object.entries(locales).map(([value, label]) => (
+                  <option key={value} value={value} lang={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
-              className="quiet"
-              disabled={state.pending}
-              onClick={() => void leave()}
+              className="quiet sound-toggle"
+              aria-pressed={soundState.enabled}
+              onClick={sound.toggle}
             >
-              {state.replaced ? t('app.dismissTable') : t('app.leave')}
+              <span aria-hidden="true">{soundState.enabled ? '♪' : '♩'}</span>{' '}
+              {t(soundState.enabled ? 'sound.mute' : 'sound.enable')}
             </button>
+            <span className={`connection ${state.status}`} role="status">
+              {state.replaced
+                ? t('connection.replaced')
+                : state.restoring
+                  ? t('connection.restoring')
+                  : state.reconnecting
+                    ? t('connection.reconnecting')
+                    : state.status === 'connecting'
+                      ? t('connection.connecting')
+                      : state.status === 'connected'
+                        ? t('connection.connected')
+                        : t('connection.disconnected')}
+            </span>
+            {state.joined && (
+              <button
+                className="quiet"
+                disabled={state.pending}
+                onClick={() => void leave()}
+              >
+                {state.replaced ? t('app.dismissTable') : t('app.leave')}
+              </button>
+            )}
+          </div>
+          {phoneGame && state.room && <RoomInfo room={state.room} />}
+          {phoneGame && state.game && (
+            <section
+              className="mobile-score-details"
+              aria-label={t('game.scores')}
+            >
+              <h3>{t('game.scores')}</h3>
+              {(['A', 'B'] as const).map((team) => {
+                const score = state.game!.public.score.teams[team];
+                return (
+                  <p key={team}>
+                    {t('seat.team', { team })}: {score.officialScore} ·{' '}
+                    {t('game.pendingPoints', {
+                      state: t(
+                        score.isScoreOpened ? 'game.opened' : 'game.unopened',
+                      ),
+                      points: score.pendingOpeningPoints,
+                    })}
+                  </p>
+                );
+              })}
+              <p>{t('game.scoreHelp')}</p>
+              <p>
+                {t('game.sekaBank', {
+                  points: state.game.public.score.sekaBank,
+                })}
+              </p>
+              {state.game.public.revealedHands && (
+                <section
+                  className="mobile-revealed-hands"
+                  aria-label={t('mobile.remaining')}
+                >
+                  <h3>{t('mobile.remaining')}</h3>
+                  {state.room?.seats.map((player, seat) => (
+                    <div key={seat}>
+                      <p>{player?.displayName}</p>
+                      <div className="mobile-reveal-row">
+                        <RevealedTiles
+                          hand={revealedHand(state.game, seat) ?? []}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+            </section>
           )}
-        </div>
+        </ResponsivePanel>
       </header>
       {state.error && (
         <div className="error-banner" role="alert">

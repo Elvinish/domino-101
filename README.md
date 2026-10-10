@@ -184,7 +184,7 @@ development memory mode loses them on process exit.
 ## Browser verification
 
 ```sh
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium webkit
 pnpm test:e2e
 ```
 
@@ -192,7 +192,8 @@ Runs four real browser clients against production-built web and server apps on
 isolated ports 4173 and 3101. Desktop completes a match; tablet and phone exercise
 real gameplay and disconnect handling. Voice scenarios verify actual local audio
 transport with fake capture devices on all three layouts. The tests audit received private projections,
-rendered hands and horizontal page overflow. Local screenshots go to ignored
+rendered hands and horizontal page overflow. The phone viewport matrix also runs in WebKit, with explicit
+safe-area and no-page-scroll checks. Local screenshots go to ignored
 `test-results/`. Run `pnpm build` afterward to restore the normal web environment
 configuration. Browser tests are separate from `pnpm verify`.
 
@@ -283,19 +284,27 @@ status. Clicking your avatar lets
 you choose or remove a photo saved **only in this browser**, without sending it
 to other players. A profile image adapter is available for future integration;
 there is no server upload or avatar synchronization. Phone layouts prioritize
-readable play and do not download the decorative hand images.
+readable play and load only the local grip photo; remote hand photos are omitted.
 See [home table implementation and asset prompts](docs/HOME_TABLE.md).
+
+During phone gameplay the table fills `100dvh` inside the screen safe areas,
+without page scrolling. Portrait uses compact seats above the chain; landscape
+puts opponents at the sides. Both keep all four seats, the full chain and a
+44-pixel-wide touch hand visible. Chat, voice and the table menu open as sheets;
+closing a sheet does not end voice or discard a chat draft. Scores, room sharing,
+language, sound and end-of-round revealed hands remain available in the menu.
+See [mobile layout modes and verification](docs/MOBILE_GAMEPLAY.md).
 
 The tabletop props are selected deterministically per room, match and round.
 The 61-item pool and 18 curated combinations are documented in
 [Dynamic tabletop decoration](docs/TABLE_DECOR.md); the layer is decorative,
-non-interactive and hidden on phone layouts.
+non-interactive and hidden in phone portrait; landscape keeps two small props.
 
 Keyboard users can skip to the game, reach legal actions, choose an end and use
 Escape to cancel that choice. Turn/player/pending states include text and marks,
 with localized live announcements. Reduced motion preferences disable tile
-movement and transitions. Phone layouts wrap the hand, keep chat below controls
-and respect screen safe areas. Chat includes timestamps, unread counts and scroll
+movement and transitions. Phone gameplay keeps the hand in one touch row, moves
+chat into a sheet and respects screen safe areas. Chat includes timestamps, unread counts and scroll
 position preservation while reading older messages.
 
 `pnpm exec vitest run --project web` runs the frontend subset. `pnpm test:e2e`

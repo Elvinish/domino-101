@@ -15,7 +15,8 @@ export function DominoChain({
 }) {
   const { t } = useI18n();
   const container = useRef<HTMLOListElement>(null);
-  const [width, setWidth] = useState(320);
+  const space = useRef<HTMLDivElement>(null);
+  const [area, setArea] = useState({ width: 320, height: 320 });
   const hasTiles = board.length > 0;
   const previous = useRef<{
     tiles: Set<string>;
@@ -45,53 +46,67 @@ export function DominoChain({
     return () => element?.classList.remove('is-arriving');
   }, [board, motionScope, motionEnabled]);
   useLayoutEffect(() => {
-    const element = container.current;
+    const element = space.current;
     if (!element || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry && entry.contentRect.width > 0)
-        setWidth(entry.contentRect.width);
+      if (!entry || entry.contentRect.width <= 0) return;
+      // The phone grid allocates a fixed play area. Desktop retains its existing
+      // intrinsic-height layout; observing it must not cause a resize loop.
+      const constrained =
+        getComputedStyle(element)
+          .getPropertyValue('--chain-fit-height')
+          .trim() === '1';
+      const height = constrained ? Math.max(1, entry.contentRect.height) : 320;
+      setArea((previous) =>
+        previous.width === entry.contentRect.width && previous.height === height
+          ? previous
+          : { width: entry.contentRect.width, height },
+      );
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [hasTiles]);
-  if (!hasTiles) return null;
-  const layout = layoutChain(board, width);
+  }, []);
+  const layout = layoutChain(board, area.width, area.height);
   return (
-    <ol
-      ref={container}
-      className="board"
-      aria-label={t('game.boardLabel')}
-      style={{ height: layout.height }}
-    >
-      {board.map((piece, index) => {
-        const tile = layout.tiles[index]!;
-        return (
-          <li
-            key={piece.tile}
-            data-tile={piece.tile}
-            aria-label={t('game.played', {
-              tile: `${piece.left}:${piece.right}`,
-            })}
-            style={{
-              left: tile.x * layout.scale,
-              top: tile.y * layout.scale,
-              width: tile.width * layout.scale,
-              height: tile.height * layout.scale,
-            }}
-          >
-            <span
-              className="board-tile"
-              style={{
-                transform: `translate(-50%, -50%) rotate(${tile.rotation}deg) scale(${layout.scale})`,
-              }}
-            >
-              <span className="board-placement">
-                <Domino left={piece.left} right={piece.right} />
-              </span>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <div ref={space} className="chain-space">
+      {hasTiles && (
+        <ol
+          ref={container}
+          className="board"
+          aria-label={t('game.boardLabel')}
+          style={{ height: layout.height }}
+        >
+          {board.map((piece, index) => {
+            const tile = layout.tiles[index]!;
+            return (
+              <li
+                key={piece.tile}
+                data-tile={piece.tile}
+                aria-label={t('game.played', {
+                  tile: `${piece.left}:${piece.right}`,
+                })}
+                style={{
+                  left: tile.x * layout.scale,
+                  top: tile.y * layout.scale,
+                  width: tile.width * layout.scale,
+                  height: tile.height * layout.scale,
+                }}
+              >
+                <span
+                  className="board-tile"
+                  style={{
+                    transform: `translate(-50%, -50%) rotate(${tile.rotation}deg) scale(${layout.scale})`,
+                  }}
+                >
+                  <span className="board-placement">
+                    <Domino left={piece.left} right={piece.right} />
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
   );
 }

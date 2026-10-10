@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openMenu } from './panels';
 import type { BrowserContext, Page } from '@playwright/test';
 import {
   roomSessionSchema,
@@ -203,6 +204,7 @@ test('hard refresh restores the exact seat and hand; replacement tab revokes old
       path: `test-results/${info.project.name}-reconnected.png`,
       fullPage: true,
     });
+    await openMenu(replacement.page);
     await replacement.page.getByRole('button', { name: 'Leave table' }).click();
     await expect(
       replacement.page.getByRole('heading', { name: 'Take a seat' }),

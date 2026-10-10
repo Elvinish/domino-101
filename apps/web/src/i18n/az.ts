@@ -1,5 +1,8 @@
 import type { Messages } from './en';
 export const az: Messages = {
+  'mobile.menu': 'Masa menyusu',
+  'mobile.close': 'Paneli bağla',
+  'mobile.remaining': 'Qalan daşlar',
   'avatar.change': 'Avatarınızı dəyişin',
   'avatar.local':
     'Foto yalnız bu brauzerdə saxlanılır və digər oyunçulara göndərilmir.',

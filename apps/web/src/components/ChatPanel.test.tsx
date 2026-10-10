@@ -24,6 +24,26 @@ function props() {
 }
 afterEach(() => vi.useRealTimers());
 describe('chat usability', () => {
+  it('preserves the draft in a closed phone sheet and only marks messages read when opened', () => {
+    const p = props();
+    const view = render(<ChatPanel {...p} expanded={false} />);
+    expect(p.onRead).not.toHaveBeenCalled();
+    view.rerender(<ChatPanel {...p} expanded />);
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Unsent draft' },
+    });
+    p.onRead.mockClear();
+    view.rerender(
+      <ChatPanel {...p} expanded={false} messages={[message(1), message(2)]} />,
+    );
+    expect(p.onRead).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    view.rerender(
+      <ChatPanel {...p} expanded messages={[message(1), message(2)]} />,
+    );
+    expect(p.onRead).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox')).toHaveValue('Unsent draft');
+  });
   it('starts collapsed with unread count, expands, timestamps, and marks read', () => {
     const p = props();
     render(<ChatPanel {...p} />);

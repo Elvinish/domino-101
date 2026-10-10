@@ -1,4 +1,7 @@
 export const en = {
+  'mobile.menu': 'Table menu',
+  'mobile.close': 'Close panel',
+  'mobile.remaining': 'Remaining tiles',
   'avatar.change': 'Change your avatar',
   'avatar.local':
     'Your photo stays in this browser and is not shared with other players.',

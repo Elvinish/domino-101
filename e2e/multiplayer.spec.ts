@@ -99,7 +99,18 @@ function audit(players: Observer[]) {
         .filter((other) => other!.playerId !== game.playerId)
         .flatMap((other) => other!.private.hand);
       const transmitted = strings(game);
-      for (const tile of hidden) expect(transmitted).not.toContain(tile);
+      if (
+        game.public.phase === 'round-ended' ||
+        game.public.phase === 'match-finished'
+      ) {
+        // The existing end-of-round reveal is authorized; live hands remain private.
+        expect(game.public.revealedHands).toEqual(
+          all.map((other) => other!.private.hand),
+        );
+      } else {
+        expect(game.public.revealedHands).toBeUndefined();
+        for (const tile of hidden) expect(transmitted).not.toContain(tile);
+      }
       expect(
         new Set(
           all
@@ -114,6 +125,9 @@ function audit(players: Observer[]) {
 test('four friends create, join, play and keep private hands isolated', async ({
   browser,
 }, info) => {
+  // A complete randomized match can span many rounds; short mobile checks keep
+  // the standard timeout. Animation is covered separately by the scene tests.
+  if (info.project.name === 'desktop') test.setTimeout(360_000);
   const contexts: BrowserContext[] = [];
   const players: Observer[] = [];
   const errors: string[] = [];
@@ -124,6 +138,7 @@ test('four friends create, join, play and keep private hands isolated', async ({
         viewport: info.project.use.viewport ?? { width: 1440, height: 1000 },
         isMobile: info.project.use.isMobile ?? false,
         hasTouch: info.project.use.hasTouch ?? false,
+        reducedMotion: 'reduce',
       });
       contexts.push(context);
       const page = await context.newPage();
@@ -267,10 +282,12 @@ test('four friends create, join, play and keep private hands isolated', async ({
       expect(ownTiles).toEqual(
         player.latest!.private.hand.map((tile) => `Play ${tile}`),
       );
-      for (const tile of hidden)
-        expect(await player.page.locator('body').innerText()).not.toContain(
-          tile,
-        );
+      if (!player.latest!.public.revealedHands) {
+        for (const tile of hidden)
+          expect(await player.page.locator('body').innerText()).not.toContain(
+            tile,
+          );
+      }
       await noOverflow(player.page);
     }
     audit(players);

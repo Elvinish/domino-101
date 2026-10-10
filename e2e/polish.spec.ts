@@ -5,6 +5,7 @@ import {
   roomSessionSchema,
 } from '../packages/protocol/src/index';
 import type { GameSnapshot } from '../packages/protocol/src/index';
+import { openChat, closeChat, openMenu, closeMenu } from './panels';
 
 function observe(page: Page) {
   const state: {
@@ -152,9 +153,12 @@ test('localized controls, keyboard, sound, chat and private gameplay', async ({
       .getByRole('textbox', { name: 'Chat message' })
       .fill('Unsent lobby draft');
     await host.getByRole('button', { name: 'Start match' }).click();
+    await expect(host.locator('.game')).toBeVisible();
+    await openChat(host);
     await expect(
       host.getByRole('textbox', { name: 'Chat message' }),
     ).toHaveValue('Unsent lobby draft');
+    await closeChat(host);
     for (const player of players.slice(0, 4)) {
       const hand = player.page.getByRole('region', { name: 'Your hand' });
       await expect(hand.getByRole('button')).toHaveCount(7);
@@ -165,9 +169,6 @@ test('localized controls, keyboard, sound, chat and private gameplay', async ({
       }
       await noOverflow(player.page);
     }
-    const peerToggle = peer.getByRole('button', { name: /Room chat/ });
-    if ((await peerToggle.getAttribute('aria-expanded')) === 'false')
-      await peerToggle.click();
     const actor = players
       .slice(0, 4)
       .find(
@@ -197,22 +198,23 @@ test('localized controls, keyboard, sound, chat and private gameplay', async ({
     ).toBe('0s');
     await actor.page.keyboard.press('Enter');
     await expect.poll(() => actor.state.game?.private.hand.length).toBe(6);
-    const hostToggle = host.getByRole('button', { name: /Room chat/ });
-    if ((await hostToggle.getAttribute('aria-expanded')) === 'false')
-      await hostToggle.click();
+    await openChat(host);
+    await openChat(peer);
     await host.getByRole('textbox', { name: 'Chat message' }).fill('Good game');
     await host.getByRole('textbox', { name: 'Chat message' }).press('Enter');
     await expect(peer.locator('.chat-message p').last()).toHaveText(
       'Good game',
     );
-    await hostToggle.click();
+    await closeChat(host);
     await expect(
       host.getByRole('textbox', { name: 'Chat message' }),
     ).toHaveCount(0);
+    await openMenu(host);
     for (const locale of ['ru', 'az', 'en']) {
       await host.getByRole('combobox').selectOption(locale);
       await noOverflow(host);
     }
+    await closeMenu(host);
     const tokens = players
       .map((p) => p.state.token)
       .filter((value): value is string => value !== null);
@@ -234,7 +236,9 @@ test('localized controls, keyboard, sound, chat and private gameplay', async ({
     }
     if (info.project.name === 'phone') {
       await host.setViewportSize({ width: 320, height: 700 });
+      await openMenu(host);
       await host.getByRole('combobox').selectOption('ru');
+      await closeMenu(host);
       await noOverflow(host);
       await host.setViewportSize({ width: 851, height: 393 });
       await noOverflow(host);

@@ -1,0 +1,675 @@
+/* The same panels stay mounted across orientation changes (including audio). */
+.responsive-panel,
+.responsive-panel > dialog[open] {
+  display: contents;
+}
+.responsive-panel > dialog {
+  color: inherit;
+  font: inherit;
+}
+.chain-space {
+  width: 100%;
+  min-width: 0;
+}
+.mobile-score-team {
+  display: none;
+}
+.phone-game-open,
+.phone-game-open body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  padding: 0;
+}
+.phone-game {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  overflow: hidden;
+  background: #21180f;
+}
+.phone-game .site-header,
+.phone-game .site-header .responsive-panel {
+  display: contents;
+}
+.phone-game .brand,
+.phone-game .site-footer {
+  display: none;
+}
+.phone-game .room-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+.phone-game .game {
+  display: grid;
+  grid-template-rows: 48px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  gap: 4px;
+}
+.phone-game .game:has(> .action-panel) {
+  grid-template-rows: 48px minmax(0, 1fr) auto;
+}
+.phone-game .scoreboard {
+  width: calc(100% - 144px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.phone-game .team-score {
+  min-width: 0;
+  gap: 4px;
+  padding: 0 4px 0 0;
+  flex-wrap: nowrap;
+}
+.phone-game .team-score > div {
+  flex: 0 0 auto;
+}
+.phone-game .team-score .score-team-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.phone-game .mobile-score-team {
+  display: inline;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.phone-game .team-score:last-of-type {
+  border: 0;
+}
+.phone-game .team-score .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.phone-game .team-score strong {
+  font-size: 24px;
+}
+.phone-game .team-score > div > span:last-child,
+.phone-game .round-info,
+.phone-game .score-help,
+.phone-game .seka {
+  display: none;
+}
+.phone-game button.mobile-tool {
+  position: absolute;
+  top: calc(var(--safe-top) + 2px);
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px;
+  background: #36281d;
+  border: 1px solid #bc946448;
+  color: #f6e6c9;
+  font-size: 23px;
+  line-height: 1;
+  z-index: 10;
+}
+.mobile-tool--settings {
+  right: calc(var(--safe-right) + 2px);
+}
+.mobile-tool--voice {
+  right: calc(var(--safe-right) + 50px);
+}
+.mobile-tool--chat {
+  right: calc(var(--safe-right) + 98px);
+}
+.mobile-tool b {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #e8c48b;
+  color: #24180e;
+  border-radius: 8px;
+  font-size: 10px;
+  padding: 3px;
+}
+.responsive-panel.is-mobile > dialog[open] {
+  display: block;
+  position: fixed;
+  inset: calc(var(--sheet-top, 0px) + var(--safe-top) + 8px) auto auto;
+  margin-inline: auto;
+  width: min(440px, calc(100% - var(--safe-left) - var(--safe-right) - 16px));
+  max-height: calc(
+    var(--sheet-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 16px
+  );
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #be9761;
+  border-radius: 16px;
+  color: #f9ead2;
+  background: #261d15;
+  box-shadow: 0 12px 48px #000a;
+}
+.responsive-panel.is-mobile > dialog::backdrop {
+  background: #100b08b3;
+}
+.sheet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.sheet-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.sheet-heading button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 24px;
+}
+.phone-game .is-mobile .header-actions {
+  justify-content: flex-start;
+}
+.phone-game .is-mobile .room-heading {
+  margin-top: 16px;
+}
+.phone-game .is-mobile .room-code {
+  overflow-wrap: anywhere;
+}
+.phone-game .is-mobile .voice-panel,
+.phone-game .is-mobile .chat-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.phone-game .is-mobile .chat-toggle {
+  display: none;
+}
+.phone-game .is-mobile .chat-body {
+  padding: 0;
+}
+.phone-game .is-mobile .chat-messages {
+  max-height: 24dvh;
+  min-height: 50px;
+}
+.phone-game .is-mobile .voice-participants {
+  grid-template-columns: 1fr 1fr;
+}
+.mobile-score-details {
+  font-size: 13px;
+  margin-top: 14px;
+}
+.mobile-score-details p {
+  margin-block: 8px;
+}
+.mobile-reveal-row {
+  display: flex;
+  gap: 5px;
+  padding: 4px 0;
+}
+.mobile-reveal-row .revealed-tile {
+  rotate: none !important;
+  translate: none !important;
+}
+.mobile-reveal-row .domino {
+  width: 30px;
+  height: 60px;
+}
+.phone-game > .error-banner,
+.phone-game > .notice,
+.phone-game .room-page > .notice {
+  position: absolute;
+  top: calc(var(--safe-top) + 50px);
+  left: calc(var(--safe-left) + 8px);
+  right: calc(var(--safe-right) + 8px);
+  margin: 0;
+  padding: 8px;
+  max-height: 25dvh;
+  overflow: auto;
+  font-size: 12px;
+  z-index: 15;
+}
+/* Portrait: four compact seats, a flexible center and a full-size touch hand. */
+.phone-game .lounge-scene {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 18px;
+  overflow: clip;
+  background: none;
+}
+.phone-game .lounge-scene::before,
+.phone-game .lounge-scene::after,
+.phone-game .scene-decoration {
+  display: none;
+}
+.phone-game .table-shell.physical-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 44px 44px minmax(0, 1fr) auto 44px;
+  grid-template-areas: 'top top' 'left right' 'board board' 'hand hand' 'bottom bottom';
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 4px;
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 2px #ffdda77a,
+    inset 0 -3px 3px #30190b99;
+}
+.phone-game .physical-table::before {
+  inset: 3px;
+  border-radius: 14px;
+}
+.phone-game .physical-table .seat {
+  position: relative;
+  inset: auto;
+  transform: none;
+  align-self: stretch;
+  justify-self: stretch;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 6px;
+  gap: 5px;
+  flex-direction: row;
+  justify-content: flex-start;
+  border-radius: 12px;
+  text-align: left;
+  background: #271d16cf;
+  box-shadow: 0 2px 4px #190e0644;
+}
+.phone-game .physical-table .seat-top {
+  grid-area: top;
+  justify-self: center;
+  width: min(210px, 70%);
+}
+.phone-game .physical-table .seat-left {
+  grid-area: left;
+}
+.phone-game .physical-table .seat-right {
+  grid-area: right;
+}
+.phone-game .physical-table .seat-bottom {
+  grid-area: bottom;
+  justify-self: center;
+  width: min(210px, 70%);
+}
+.phone-game .seat-copy {
+  min-width: 0;
+  flex: 1;
+}
+.phone-game .seat-copy strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.phone-game .seat-copy .hand-count,
+.phone-game .seat-copy .seat-status {
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.phone-game .seat:not(.own-seat):not(.offline-seat) .seat-status,
+.phone-game .seat-relation {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.phone-game .persona-badge {
+  font-size: 7px;
+  margin-left: 4px;
+  padding: 0 2px;
+}
+.phone-game .player-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 16px;
+}
+.phone-game .avatar-settings summary {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-game .physical-table .own-seat {
+  padding-block: 0;
+}
+.phone-game .avatar-popover {
+  position: fixed;
+  inset: auto 8px calc(var(--safe-bottom) + 8px);
+  width: auto;
+  max-height: 70dvh;
+  overflow: auto;
+}
+.phone-game .seat-reveal {
+  display: none;
+}
+.phone-game .physical-table .board-zone {
+  grid-area: board;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  padding: 0 2px;
+  overflow: hidden;
+}
+.phone-game .board-zone > .eyebrow,
+.phone-game .starter-note {
+  display: none;
+}
+.phone-game .physical-table .turn-label {
+  flex: none;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  margin: 1px 0 3px;
+}
+.phone-game .physical-table .open-ends {
+  flex: none;
+  font-size: 10px;
+}
+.phone-game .chain-space {
+  --chain-fit-height: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+.phone-game .physical-table .board {
+  margin: 0;
+  flex: none;
+}
+.phone-game .physical-table .empty-board {
+  font-size: 12px;
+  padding: 0 8px;
+  margin: 0;
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+}
+.phone-game .lounge-room .physical-table .hand-panel {
+  grid-area: hand;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 2px 0 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+}
+.phone-game .hand-heading {
+  grid-row: 1;
+  padding: 0 8px;
+  margin: 0;
+  gap: 8px;
+  height: 18px;
+}
+.phone-game .hand-heading h3 {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.phone-game .hand-heading > span {
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: right;
+}
+.phone-game .hand-heading h3 span {
+  font-size: 10px;
+  margin-left: 4px;
+}
+.phone-game .local-grip {
+  --grip-width: 360px;
+  --grip-height: 240px;
+  --grip-inset: -144px;
+  --grip-top: 0px;
+  grid-row: 2;
+  width: max-content;
+  max-width: 100%;
+  height: 96px;
+  margin: 0 auto;
+  filter: none;
+}
+.phone-game .local-grip .grip-layer {
+  display: block;
+}
+.phone-game .local-grip .grip-photo {
+  height: 96px;
+  overflow: hidden;
+}
+.phone-game .local-grip .grip-photo img {
+  width: 360px;
+  height: 240px;
+}
+.phone-game .local-grip .grip-photo::before {
+  display: none;
+}
+.phone-game .local-grip .grip-layer--back .grip-photo--left {
+  clip-path: inset(0 50% 0 0);
+}
+.phone-game .local-grip .grip-layer--back .grip-photo--right {
+  clip-path: inset(0 0 0 50%);
+}
+.phone-game .local-grip .grip-layer--back img {
+  mask-image: none;
+}
+.phone-game .local-grip .grip-layer--front .grip-photo {
+  clip-path: none;
+}
+.phone-game .local-grip .grip-layer--front .grip-photo--left img {
+  clip-path: polygon(
+    18% 43%,
+    18% 32%,
+    29% 27%,
+    40% 27%,
+    44% 29%,
+    44% 34%,
+    37% 36%,
+    28% 43%
+  );
+}
+.phone-game .local-grip .grip-layer--front .grip-photo--right img {
+  clip-path: polygon(
+    82% 43%,
+    82% 32%,
+    71% 27%,
+    60% 27%,
+    56% 29%,
+    56% 34%,
+    63% 36%,
+    72% 43%
+  );
+}
+.phone-game .lounge-room .local-grip .hand {
+  gap: 0;
+  flex-wrap: nowrap;
+  min-height: 0;
+  padding: 8px 0 0;
+}
+.phone-game .lounge-room .local-grip .hand-tile {
+  width: 44px;
+  min-width: 44px;
+  height: 82px;
+  min-height: 82px;
+  margin: 0;
+  padding: 3px;
+  rotate: none !important;
+  translate: none !important;
+  outline-offset: -2px;
+}
+.phone-game .hand-tile .domino {
+  width: 38px;
+  height: 76px;
+  min-width: 0;
+  margin: 0;
+}
+/* Explicit flexible halves avoid WebKit retaining the desktop grid's 34px
+   minimum inside a shorter touch tile. Pips must never cross the ivory edge. */
+.phone-game .hand-tile .pips {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 0;
+  gap: 2px;
+  padding: 1px;
+}
+.phone-game .hand-tile .pip {
+  width: 5px;
+  height: 5px;
+}
+.phone-game .hand-tile .tile-divider {
+  flex: none;
+  margin: 3px 0;
+}
+.phone-game .lounge-room .local-grip .tile-indicator {
+  top: -9px;
+  bottom: auto;
+  font-size: 13px;
+}
+.phone-game .hand-controls,
+.phone-game .end-choice {
+  grid-row: 3;
+  position: relative;
+  inset: auto;
+  z-index: 4;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 3px 0;
+  width: 100%;
+  background: #281c10dd;
+  border-radius: 8px;
+}
+.phone-game .end-choice strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.phone-game .hand-controls button,
+.phone-game .end-choice button {
+  min-height: 48px;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin: 0;
+}
+.phone-game .game > .action-panel {
+  margin: 0;
+  padding: 8px;
+  max-height: 28dvh;
+  overflow: auto;
+  border-radius: 12px;
+}
+.phone-game .action-panel h3 {
+  font-size: 16px;
+}
+.phone-game .action-panel p {
+  font-size: 12px;
+  margin: 4px 0;
+}
+.phone-game .action-panel .button-row {
+  margin: 0;
+  gap: 4px;
+}
+.phone-game .action-panel button {
+  min-height: 44px;
+  margin: 0;
+  font-size: 12px;
+}
+/* Landscape: seats return to the sides; the hand and small props anchor the table. */
+@media (orientation: landscape) {
+  .phone-game .scoreboard {
+    max-width: 340px;
+  }
+  .phone-game .table-shell.physical-table {
+    grid-template-columns: 88px minmax(0, 1fr) 88px;
+    grid-template-rows: 38px minmax(0, 1fr) auto;
+    grid-template-areas: '. top .' 'left board right' 'hand hand hand';
+  }
+  .phone-game .physical-table .seat-top {
+    width: min(220px, 100%);
+  }
+  .phone-game .physical-table .seat-left,
+  .phone-game .physical-table .seat-right {
+    align-self: center;
+    flex-direction: column;
+    padding: 5px;
+    text-align: center;
+  }
+  .phone-game .physical-table .seat-bottom {
+    position: absolute;
+    left: 6px;
+    bottom: 8px;
+    width: 136px;
+    height: 44px;
+  }
+  .phone-game .physical-table .hand-panel {
+    justify-self: center;
+    width: min(360px, calc(100% - 240px));
+    min-width: 308px;
+  }
+  .phone-game .hand-heading > span {
+    max-width: 220px;
+  }
+  .phone-game .scene-decoration {
+    display: block;
+  }
+  .phone-game .scene-player {
+    display: none;
+  }
+  .phone-game .table-decor-seat {
+    display: none;
+  }
+  .phone-game .table-decor-seat--top {
+    display: flex;
+    top: 2px;
+    left: 12px;
+    right: auto;
+  }
+  .phone-game .table-prop {
+    width: 32px;
+    height: 32px;
+  }
+  .phone-game .table-decor-seat .table-prop:nth-child(n + 3) {
+    display: none;
+  }
+  .phone-game .seat-reveal {
+    display: none;
+  }
+}

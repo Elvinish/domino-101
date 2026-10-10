@@ -67,14 +67,14 @@ export function Seats({
                   </small>
                 )}
               </strong>
-              <span>
+              <span className="seat-relation">
                 {relation} ·{' '}
                 {t('seat.team', {
                   team: player?.team ?? (seat % 2 === 0 ? 'A' : 'B'),
                 })}
                 {player?.playerId === room.hostId ? ` · ${t('seat.host')}` : ''}
               </span>
-              <span>
+              <span className="seat-status">
                 {player
                   ? player.connected || player.kind === 'bot'
                     ? active

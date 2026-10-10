@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { gameSnapshotSchema } from '../packages/protocol/src/index';
 import type { GameSnapshot } from '../packages/protocol/src/index';
+import { openMenu, closeMenu } from './panels';
 
 test('serves five short normalized recorded domino placement cues', async ({
   request,
@@ -134,9 +135,11 @@ test('placement sound observes new bot and human moves once and reconnect stays 
     );
   const beforeRender = await count();
   expect(beforeRender).toBeGreaterThan(0);
+  await openMenu(page);
   await page.getByRole('combobox').selectOption('ru');
   await expect.poll(count).toBe(beforeRender);
   await page.getByRole('combobox').selectOption('en');
+  await closeMenu(page);
   latest = null;
   await page.reload();
   await expect(page.getByRole('region', { name: 'Your hand' })).toBeVisible();

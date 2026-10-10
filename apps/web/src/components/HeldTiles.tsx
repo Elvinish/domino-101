@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { remoteHandMedia } from '../mobile';
 
 /** Two independently anchored photo halves follow the edges of the tile row.
  * The same photo is clipped again above the row to put only thumbs in front. */
@@ -27,7 +28,7 @@ export function HeldTiles({
     >
       {across && (
         <picture className="player-torso" aria-hidden="true">
-          <source media="(min-width: 641px)" srcSet={asset} />
+          <source media={remoteHandMedia} srcSet={asset} />
           <img
             src="/images/lounge/empty.svg"
             alt=""
@@ -45,7 +46,10 @@ export function HeldTiles({
         >
           {(['left', 'right'] as const).map((half) => (
             <picture className={`grip-photo grip-photo--${half}`} key={half}>
-              <source media="(min-width: 641px)" srcSet={asset} />
+              <source
+                media={concealed ? remoteHandMedia : '(min-width: 0px)'}
+                srcSet={asset}
+              />
               <img
                 src="/images/lounge/empty.svg"
                 alt=""

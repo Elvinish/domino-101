@@ -63,11 +63,15 @@ export function GameTable({
           return (
             <div key={team} className="team-score">
               <div>
-                <span className="eyebrow">
+                <span className="eyebrow score-team-label">
                   {t('seat.team', { team })}
                   {room.seats[own.seat]?.team === team
                     ? ` · ${t('game.yourTeam')}`
                     : ''}
+                </span>
+                <span className="mobile-score-team" aria-hidden="true">
+                  {team}
+                  {room.seats[own.seat]?.team === team ? ' •' : ''}
                 </span>
                 <span>
                   {t('game.pendingPoints', {

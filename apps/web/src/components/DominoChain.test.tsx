@@ -75,7 +75,7 @@ it('responds to measured width, keeps logical tile order and disconnects the res
   const list = screen.getByRole('list', {
     name: 'Played tiles, in chain order',
   });
-  expect(observe).toHaveBeenCalledWith(list);
+  expect(observe).toHaveBeenCalledWith(list.parentElement);
   const resize = (width: number) =>
     act(() =>
       notify(
@@ -93,6 +93,21 @@ it('responds to measured width, keeps logical tile order and disconnects the res
   expect(narrow.some((value) => value.includes('rotate(180deg)'))).toBe(true);
   resize(1100);
   expect(transforms()).not.toEqual(narrow);
+  // A phone allocates height independently of the chain's intrinsic size.
+  (list.parentElement as HTMLElement).style.setProperty(
+    '--chain-fit-height',
+    '1',
+  );
+  act(() =>
+    notify(
+      [{ contentRect: { width: 600, height: 130 } } as ResizeObserverEntry],
+      {} as ResizeObserver,
+    ),
+  );
+  expect(parseFloat((list as HTMLElement).style.height)).toBeLessThanOrEqual(
+    130,
+  );
+  expect(list.querySelectorAll('.domino')).toHaveLength(28);
   expect(
     within(list)
       .getAllByRole('listitem')

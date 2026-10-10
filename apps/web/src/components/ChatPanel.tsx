@@ -21,6 +21,7 @@ export function ChatPanel({
   onSend,
   onReaction,
   onRead,
+  expanded,
 }: {
   messages: ChatMessage[];
   reactionEvents: ReactionReceived[];
@@ -31,9 +32,11 @@ export function ChatPanel({
   onSend: (text: string) => Promise<boolean>;
   onReaction: (reaction: string) => Promise<boolean>;
   onRead: () => void;
+  expanded?: boolean | undefined;
 }) {
   const { t, locale } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setOpen] = useState(false);
+  const open = expanded ?? localOpen;
   const [text, setText] = useState('');
   const [expiredReaction, setExpiredReaction] = useState('');
   const list = useRef<HTMLDivElement>(null);

@@ -141,7 +141,7 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
   ).toBe('none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const richScene = (info.project.use.viewport?.width ?? 1440) > 640;
-  expect(await tableAppearance()).toEqual(lobbyAppearance);
+  if (richScene) expect(await tableAppearance()).toEqual(lobbyAppearance);
   if (richScene) {
     await expectHandsReachSceneEdges(page);
     await expect
@@ -171,7 +171,10 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
       )
       .toBe(true);
   } else {
-    expect(handRequests).toHaveLength(0);
+    // The touch hand keeps its photographed grip; remote decorations stay hidden.
+    expect(handRequests.every((url) => url.endsWith('/hands-grip.png'))).toBe(
+      true,
+    );
   }
   const initialRevision = snapshot().revision;
   await page.locator('.lounge-scene').screenshot({
@@ -385,6 +388,8 @@ test('one human fills bot seats and plays a real round while bots respond', asyn
     info.project.use.viewport?.width ?? 1440,
   ]) {
     await page.setViewportSize({ width, height: 1000 });
+    // The React phone shell follows matchMedia on its next render.
+    await expect(page.locator('.phone-game')).toHaveCount(width <= 640 ? 1 : 0);
     await expectChainFits(page);
     if (width > 640) await expectHandsReachSceneEdges(page);
   }
